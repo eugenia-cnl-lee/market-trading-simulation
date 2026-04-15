@@ -48,12 +48,12 @@ p {
  * DASHBOARD LAYOUT
  * =========================================
  * Creates a two-column layout:
- * - Market (left)
- * - Portfolio (right)
+ * Wider left panel for market and insights
+ * Narrower right panel for portfolio data
  */
 .dashboard {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 7fr 3fr;
     gap: 24px;
     align-items: start;
 }
@@ -227,8 +227,16 @@ p {
  * =========================================
  * RESPONSIVE DESIGN
  * =========================================
- * Collapses layout into single column on smaller screens.
+ * Adjusts layout for smaller screens by:
+ * - collapsing the main dashboard into one column
+ * - collapsing the insights grid into one column
  */
+@media (max-width: 1400px) {
+    #insights {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 1000px) {
     .dashboard {
         grid-template-columns: 1fr;
@@ -240,12 +248,14 @@ p {
  * =========================================
  * INSIGHTS SECTION
  * =========================================
- * Styles insight cards as visible
- * decision-support signals.
+ * Displays insight cards in a responsive grid:
+ * - 2 columns on larger screens
+ * - 1 column on smaller screens
+ * Improves visibility and reduces vertical scrolling.
  */
 #insights {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
     margin-top: 24px;
 }

@@ -147,8 +147,9 @@ function renderTransactions() {
  * =========================================
  * INSIGHTS RENDERING
  * =========================================
- * Displays structured insight cards with
- * visual emphasis based on insight type.
+ * Displays structured insight cards with:
+ * - visual emphasis based on insight type
+ * - priority-based ordering (warning → positive → info)
  */
 function renderInsights(insights) {
     const insightsContainer = document.getElementById("insights");
@@ -159,7 +160,17 @@ function renderInsights(insights) {
         return;
     }
 
-    for (const insight of insights) {
+    const priorityOrder = {
+        warning: 0,
+        positive: 1,
+        info: 2
+    };
+
+    const sortedInsights = [...insights].sort((a, b) => {
+        return priorityOrder[a.type] - priorityOrder[b.type];
+    });
+
+    for (const insight of sortedInsights) {
         const insightCard = document.createElement("div");
         insightCard.className = `insight-card insight-${insight.type}`;
 
