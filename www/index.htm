@@ -9,9 +9,25 @@
     <body>
         <h1>Market Simulation and Trading &  Portfolio Analytics Platform</h1>
 
-        <div id="watchlist"></div>
+        <div class="dashboard">
+            <section class="market-section">
+                <h2>Market Watchlist</h2>
+                <div id="watchlist"></div>
+                <button id="refresh-btn">Refresh Market</button>
+            </section>
 
-        <button id="refresh-btn">Refresh Market</button>
+            <section class="portfolio-section">
+                <h2>Portfolio</h2>
+
+                <div id="portfolio-summary"></div>
+
+                <h3>Holdings</h3>
+                <div id="holdings"></div>
+
+                <h3>Transactions</h3>
+                <div id="transactions"></div>
+            </section>
+        </div>
 
         <!-- Load all the scripts in order -->
         <script src="scripts/marketData.js"></script>
