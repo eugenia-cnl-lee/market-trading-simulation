@@ -17,6 +17,15 @@ function renderWatchlist(quotes) {
             <button class="sell-btn" onclick="handleSell('${symbol}', ${data.c})">Sell</button>
             `;
 
+        // Control the colour
+        const changeElement = stockCard.querySelector(".stock-change");
+        changeElement.classList.remove("positive", "negative");
+        if (data.d < 0) {
+            changeElement.classList.add("negative");
+        } else {
+            changeElement.classList.add("positive");
+        }
+
         watchlist.appendChild(stockCard);
     }
 }

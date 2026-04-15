@@ -25,3 +25,11 @@ body {
 .stock-change {
     margin: 8px 0;
 }
+
+.stock-change.positive {
+    color: green;
+}
+
+.stock-change.negative {
+    color: red;
+}
