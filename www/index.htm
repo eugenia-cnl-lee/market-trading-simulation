@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Paper Trading Platform</title>
+    </head>
+    <body>
+        <h1>Paper Trading Platform</h1>
+
+        <div id="quote-card">
+            <h2 id="stock-name">AAPL</h2>
+            <p id="price">Loading...</p>
+            <p id="change"></p>
+        </div>
+
+        <button id="refresh-btn">Refresh Price</button>
+
+        <!-- Load all the scripts in order -->
+        <script src="scripts/marketData.js"></script>
+        <script src="scripts/ui.js"></script>
+        <script src="scripts/main.js"></script>
+    </body>
+</html>
