@@ -227,9 +227,14 @@ p {
  * =========================================
  * RESPONSIVE DESIGN
  * =========================================
- * Adjusts layout for smaller screens by:
- * - collapsing the main dashboard into one column
+ * Adjusts layout for narrower screens by:
  * - collapsing the insights grid into one column
+ * - collapsing the main dashboard into one column
+ * - adjusting the insight summary layout to prevent overflow
+ *
+ * Uses separate breakpoints for:
+ * - insights layout (content-driven)
+ * - dashboard layout (structure-driven)
  */
 @media (max-width: 1400px) {
     #insights {
@@ -240,6 +245,11 @@ p {
 @media (max-width: 1000px) {
     .dashboard {
         grid-template-columns: 1fr;
+    }
+
+    .summary-link {
+        margin-left: 0;
+        width: 100%;
     }
 }
 
@@ -313,4 +323,61 @@ p {
 
 .insight-positive .insight-label {
     color: #15803d;
+}
+
+
+/**
+ * =========================================
+ * INSIGHT SUMMARY BAR
+ * =========================================
+ * Displays a top-level summary of insight counts,
+ * including warning, positive, and informational signals.
+ *
+ * Positioned below the main title to ensure visibility
+ * without requiring scrolling.
+ *
+ * Designed to:
+ * - highlight critical warnings immediately
+ * - provide a quick overview of portfolio signals
+ * - allow navigation to the full insights section
+ */
+#insight-summary {
+    margin-bottom: 20px;
+}
+
+.insight-summary-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 16px;
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+}
+
+.summary-warning {
+    color: #991b1b;
+    font-weight: 700;
+}
+
+.summary-positive {
+    color: #15803d;
+    font-weight: 700;
+}
+
+.summary-info {
+    color: #1d4ed8;
+    font-weight: 700;
+}
+
+.summary-link {
+    margin-left: auto; /* pushes link to right on wider screens */
+    color: #1d4ed8;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.summary-link:hover {
+    text-decoration: underline;
 }

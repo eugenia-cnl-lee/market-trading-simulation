@@ -182,3 +182,38 @@ function renderInsights(insights) {
         insightsContainer.appendChild(insightCard);
     }
 }
+
+/**
+ * =========================================
+ * INSIGHT SUMMARY RENDERING
+ * =========================================
+ * Displays a compact summary of insight counts
+ * with a link to the full insights section.
+ */
+function renderInsightSummary(insights) {
+    const summaryContainer = document.getElementById("insight-summary");
+    summaryContainer.innerHTML = "";
+
+    let warningCount = 0;
+    let positiveCount = 0;
+    let infoCount = 0;
+
+    for (const insight of insights) {
+        if (insight.type === "warning") {
+            warningCount += 1;
+        } else if (insight.type === "positive") {
+            positiveCount += 1;
+        } else if (insight.type === "info") {
+            infoCount += 1;
+        }
+    }
+
+    summaryContainer.innerHTML = `
+        <div class="insight-summary-bar">
+            <span class="summary-warning">${warningCount} warning insight${warningCount === 1 ? "" : "s"}</span>
+            <span class="summary-positive">${positiveCount} positive insight${positiveCount === 1 ? "" : "s"}</span>
+            <span class="summary-info">${infoCount} informational insight${infoCount === 1 ? "" : "s"}</span>
+            <a class="summary-link" href="#insights-section">Jump to insights</a>
+        </div>
+    `;
+}
