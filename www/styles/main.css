@@ -1,0 +1,27 @@
+body {
+    font-family: 'Times New Roman', Times, serif;
+    padding: 20px;
+}
+
+#watchlist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stock-card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: rgb(251, 251, 251);
+}
+
+.stock-symbol {
+    margin-top: 0;
+}
+
+.stock-price,
+.stock-change {
+    margin: 8px 0;
+}

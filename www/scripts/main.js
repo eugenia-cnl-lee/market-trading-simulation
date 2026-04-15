@@ -1,8 +1,10 @@
-async function loadQuote() {
-    const data = await getQuote("AAPL");
-    renderQuote("AAPL", data);
+const WATCHLIST = ["AAPL", "MSFT", "TSLA", "NVDA", "AMZN"];
+
+async function loadMarket() {
+    const quotes = await getQuotes(WATCHLIST);
+    renderWatchlist(quotes);
 }
 
-document.getElementById("refresh-btn").addEventListener("click", loadQuote);
+document.getElementById("refresh-btn").addEventListener("click", loadMarket);
 
-loadQuote();
+loadMarket();
