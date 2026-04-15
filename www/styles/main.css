@@ -238,21 +238,69 @@ p {
 
 /**
  * =========================================
- * INSIGHT CARD STYLING
+ * INSIGHTS SECTION
  * =========================================
- * Styles interpretation messages in the
- * portfolio panel.
+ * Styles insight cards as visible
+ * decision-support signals.
  */
 #insights {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     margin-top: 24px;
 }
 
+.section-subtext {
+    margin-top: -6px;
+    margin-bottom: 16px;
+    color: #52606d;
+    font-size: 0.95rem;
+}
+
 .insight-card {
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 6px solid transparent;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.insight-label {
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 1rem;
+}
+
+.insight-message {
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Warning insight */
+.insight-warning {
+    background-color: #fef2f2;
+    border-left-color: #dc2626;
+}
+
+.insight-warning .insight-label {
+    color: #991b1b;
+}
+
+/* Informational insight */
+.insight-info {
     background-color: #eff6ff;
-    border: 1px solid #bfdbfe;
-    border-radius: 10px;
-    padding: 14px 16px;
+    border-left-color: #2563eb;
+}
+
+.insight-info .insight-label {
+    color: #1d4ed8;
+}
+
+/* Positive insight */
+.insight-positive {
+    background-color: #ecfdf5;
+    border-left-color: #16a34a;
+}
+
+.insight-positive .insight-label {
+    color: #15803d;
 }

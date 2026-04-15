@@ -147,8 +147,8 @@ function renderTransactions() {
  * =========================================
  * INSIGHTS RENDERING
  * =========================================
- * Displays interpretation messages generated
- * from portfolio analysis.
+ * Displays structured insight cards with
+ * visual emphasis based on insight type.
  */
 function renderInsights(insights) {
     const insightsContainer = document.getElementById("insights");
@@ -161,8 +161,13 @@ function renderInsights(insights) {
 
     for (const insight of insights) {
         const insightCard = document.createElement("div");
-        insightCard.className = "insight-card";
-        insightCard.innerHTML = `<p>${insight}</p>`;
+        insightCard.className = `insight-card insight-${insight.type}`;
+
+        insightCard.innerHTML = `
+            <div class="insight-label">${insight.title}</div>
+            <p class="insight-message">${insight.message}</p>
+        `;
+
         insightsContainer.appendChild(insightCard);
     }
 }
