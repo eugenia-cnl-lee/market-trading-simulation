@@ -234,3 +234,25 @@ p {
         grid-template-columns: 1fr;
     }
 }
+
+
+/**
+ * =========================================
+ * INSIGHT CARD STYLING
+ * =========================================
+ * Styles interpretation messages in the
+ * portfolio panel.
+ */
+#insights {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.insight-card {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 14px 16px;
+}

@@ -17,11 +17,8 @@ let latestQuotes = {};
  * =========================================
  * MARKET LOADING
  * =========================================
- * Fetches market data and updates:
- * - watchlist
- * - portfolio summary
- * - holdings
- * - transactions
+ * Fetches market data and updates all major
+ * interface sections.
  */
 async function loadMarket() {
     latestQuotes = await getQuotes(WATCHLIST);
@@ -30,6 +27,7 @@ async function loadMarket() {
     renderPortfolioSummary(latestQuotes);
     renderHoldings(latestQuotes);
     renderTransactions();
+    renderInsights(generateInsights(latestQuotes));
 }
 
 
@@ -37,7 +35,8 @@ async function loadMarket() {
  * =========================================
  * USER ACTION HANDLERS
  * =========================================
- * Handles buy/sell interactions and refreshes portfolio UI.
+ * Handles buy/sell actions and refreshes
+ * portfolio-related UI.
  */
 function handleBuy(symbol, price) {
     buyStock(symbol, price);
@@ -45,6 +44,7 @@ function handleBuy(symbol, price) {
     renderPortfolioSummary(latestQuotes);
     renderHoldings(latestQuotes);
     renderTransactions();
+    renderInsights(generateInsights(latestQuotes));
 }
 
 function handleSell(symbol, price) {
@@ -53,6 +53,7 @@ function handleSell(symbol, price) {
     renderPortfolioSummary(latestQuotes);
     renderHoldings(latestQuotes);
     renderTransactions();
+    renderInsights(generateInsights(latestQuotes));
 }
 
 
@@ -60,7 +61,6 @@ function handleSell(symbol, price) {
  * =========================================
  * INITIALISATION
  * =========================================
- * Sets up event listeners and loads initial data.
  */
 document.getElementById("refresh-btn").addEventListener("click", loadMarket);
 

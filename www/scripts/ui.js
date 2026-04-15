@@ -141,3 +141,28 @@ function renderTransactions() {
         transactionsContainer.appendChild(transactionCard);
     }
 }
+
+
+/**
+ * =========================================
+ * INSIGHTS RENDERING
+ * =========================================
+ * Displays interpretation messages generated
+ * from portfolio analysis.
+ */
+function renderInsights(insights) {
+    const insightsContainer = document.getElementById("insights");
+    insightsContainer.innerHTML = "";
+
+    if (insights.length === 0) {
+        insightsContainer.innerHTML = "<p>No insights available yet.</p>";
+        return;
+    }
+
+    for (const insight of insights) {
+        const insightCard = document.createElement("div");
+        insightCard.className = "insight-card";
+        insightCard.innerHTML = `<p>${insight}</p>`;
+        insightsContainer.appendChild(insightCard);
+    }
+}
