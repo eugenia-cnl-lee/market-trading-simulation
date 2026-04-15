@@ -1,8 +1,85 @@
+/**
+ * =========================================
+ * GLOBAL PAGE STYLING
+ * =========================================
+ * Sets base layout, typography, and background.
+ */
 body {
+    margin: 0;
+    padding: 32px;
     font-family: 'Times New Roman', Times, serif;
-    padding: 20px;
+    background-color: #f4f6f8;
+    color: #1f2933;
 }
 
+
+/**
+ * =========================================
+ * HEADINGS AND TEXT
+ * =========================================
+ * Establishes visual hierarchy for titles.
+ */
+h1 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 2rem;
+}
+
+h2 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.4rem;
+}
+
+h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+p {
+    margin: 6px 0;
+    line-height: 1.5;
+}
+
+
+/**
+ * =========================================
+ * DASHBOARD LAYOUT
+ * =========================================
+ * Creates a two-column layout:
+ * - Market (left)
+ * - Portfolio (right)
+ */
+.dashboard {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+
+/**
+ * =========================================
+ * SECTION CONTAINERS
+ * =========================================
+ * Wraps market and portfolio into card-like panels.
+ */
+.market-section,
+.portfolio-section {
+    background-color: #ffffff;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+
+/**
+ * =========================================
+ * WATCHLIST GRID
+ * =========================================
+ * Displays stock cards in a responsive grid layout.
+ */
 #watchlist {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -10,26 +87,150 @@ body {
     margin-bottom: 20px;
 }
 
-.stock-card {
-    border: 1px solid #ccc;
-    border-radius: 8px;
+
+/**
+ * =========================================
+ * CARD COMPONENTS
+ * =========================================
+ * Reusable styling for:
+ * - stock cards
+ * - holdings
+ * - transactions
+ */
+.stock-card,
+.holding-card,
+.transaction-card {
+    background-color: #fafafa;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
     padding: 16px;
-    background-color: rgb(251, 251, 251);
+}
+
+
+/**
+ * =========================================
+ * STOCK CARD DETAILS
+ * =========================================
+ */
+.stock-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .stock-symbol {
-    margin-top: 0;
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
 }
 
 .stock-price,
 .stock-change {
-    margin: 8px 0;
+    font-size: 0.95rem;
 }
 
-.stock-change.positive {
-    color: green;
+
+/**
+ * =========================================
+ * BUTTON STYLING
+ * =========================================
+ * Styles buy/sell/refresh buttons with hover feedback.
+ */
+.buy-btn,
+.sell-btn,
+#refresh-btn {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.stock-change.negative {
-    color: red;
+.buy-btn:hover,
+.sell-btn:hover,
+#refresh-btn:hover {
+    transform: translateY(-1px);
+}
+
+.buy-btn {
+    background-color: #d1fae5;
+    color: #065f46;
+    margin-right: 8px;
+}
+
+.sell-btn {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+#refresh-btn {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    margin-top: 4px;
+}
+
+
+/**
+ * =========================================
+ * CONDITIONAL COLOUR INDICATORS
+ * =========================================
+ * Used for:
+ * - price change
+ * - PnL display
+ */
+.positive {
+    color: #15803d;
+    font-weight: 600;
+}
+
+.negative {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+
+/**
+ * =========================================
+ * PORTFOLIO SUMMARY BOX
+ * =========================================
+ * Highlights key metrics (cash, value, etc.)
+ */
+#portfolio-summary {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+
+/**
+ * =========================================
+ * LIST CONTAINERS
+ * =========================================
+ * Used for holdings and transactions sections.
+ */
+#holdings,
+#transactions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.portfolio-section h3 {
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+
+/**
+ * =========================================
+ * RESPONSIVE DESIGN
+ * =========================================
+ * Collapses layout into single column on smaller screens.
+ */
+@media (max-width: 1000px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
 }
