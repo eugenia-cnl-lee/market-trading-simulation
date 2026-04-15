@@ -8,3 +8,13 @@ async function loadMarket() {
 document.getElementById("refresh-btn").addEventListener("click", loadMarket);
 
 loadMarket();
+
+function handleBuy(symbol, price) {
+    buyStock(symbol, price);
+    console.log(portfolio);
+}
+
+function handleSell(symbol, price) {
+    sellStock(symbol, price);
+    console.log(portfolio);
+}
