@@ -10,6 +10,13 @@
  */
 function renderWatchlist(quotes) {
     const watchlist = document.getElementById("watchlist");
+
+    // Logging for debugging purposes
+    if (!watchlist) {
+        console.error('Missing element: #watchlist');
+        return;
+    }
+
     watchlist.innerHTML = "";
 
     for (const symbol in quotes) {
@@ -53,6 +60,12 @@ function renderWatchlist(quotes) {
 function renderPortfolioSummary(quotes) {
     const summary = document.getElementById("portfolio-summary");
 
+    // Logging for debugging purposes
+    if (!summary) {
+        console.error('Missing element: #portfolio-summary');
+        return;
+    }
+    
     const holdingsValue = calculateHoldingsValue(quotes);
     const totalValue = calculateTotalPortfolioValue(quotes);
 
@@ -77,6 +90,13 @@ function renderPortfolioSummary(quotes) {
  */
 function renderHoldings(quotes) {
     const holdingsContainer = document.getElementById("holdings");
+
+    // Logging for debugging purposes
+    if (!holdingsContainer) {
+        console.error('Missing element: #holdings');
+        return;
+    }
+
     holdingsContainer.innerHTML = "";
 
     const symbols = Object.keys(portfolio.holdings);
@@ -119,6 +139,13 @@ function renderHoldings(quotes) {
  */
 function renderTransactions() {
     const transactionsContainer = document.getElementById("transactions");
+    
+    // Logging for debugging purposes
+    if (!transactionsContainer) {
+        console.error('Missing element: #transactions');
+        return;
+    }
+
     transactionsContainer.innerHTML = "";
 
     if (portfolio.transactions.length === 0) {
@@ -153,6 +180,13 @@ function renderTransactions() {
  */
 function renderInsights(insights) {
     const insightsContainer = document.getElementById("insights");
+
+    // Logging for debugging purposes
+    if (!insightsContainer) {
+        console.error('Missing element: #insights');
+        return;
+    }
+
     insightsContainer.innerHTML = "";
 
     if (insights.length === 0) {
@@ -192,6 +226,14 @@ function renderInsights(insights) {
  */
 function renderInsightSummary(insights) {
     const summaryContainer = document.getElementById("insight-summary");
+    
+    
+    // Logging for debugging purposes
+    if (!summaryContainer) {
+        console.error('Missing element: #insight-summary');
+        return;
+    }
+    
     summaryContainer.innerHTML = "";
 
     let warningCount = 0;

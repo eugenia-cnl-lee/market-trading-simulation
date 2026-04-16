@@ -25,6 +25,10 @@ const WATCHLIST = ["AAPL", "MSFT", "TSLA", "NVDA", "AMZN"];
 const REFRESH_INTERVAL_MS = 10000;          // Auto-refresh every 10 seconds
 const MANUAL_REFRESH_COOLDOWN_MS = 7000;  // Manual refresh cooldown: 7 seconds
 
+// Logging for debugging purposes
+console.log("REFRESH_INTERVAL_MS:", REFRESH_INTERVAL_MS);
+console.log("MANUAL_REFRESH_COOLDOWN_MS:", MANUAL_REFRESH_COOLDOWN_MS);
+
 /**
  * =========================================
  * SHARED MARKET STATE
@@ -47,11 +51,165 @@ const MANUAL_REFRESH_COOLDOWN_MS = 7000;  // Manual refresh cooldown: 7 seconds
  * lastManualRefreshTime:
  * Tracks when the user last triggered a manual refresh.
  * Used to enforce the cooldown period.
+ * 
+ *
+ * lastUpdatedTime:
+ * Stores the timestamp of the most recent successful refresh.
+ *
+ * marketStatusType:
+ * Tracks the current update state for UI messaging.
  */
 let latestQuotes = {};
 let isLoadingMarket = false;
 let marketRefreshTimer = null;
 let lastManualRefreshTime = 0;
+let lastUpdatedTime = null;
+let marketStatusType = "idle";
+let marketStatusTimer = null;
+
+
+/**
+ * =========================================
+ * MARKET STATUS UI
+ * =========================================
+ * Manages the display of live market update information,
+ * including:
+ * - current update state (loading, success, error, idle)
+ * - last successful update timestamp (absolute + relative)
+ * - auto-refresh interval messaging
+ *
+ * This section separates:
+ * - status computation (timestamps, state)
+ * - status rendering (DOM updates)
+ * - status ticking (time-based UI updates)
+ *
+ * A dedicated ticker is used to re-render the status in
+ * sync with whole-second boundaries. This ensures relative
+ * time indicators (e.g. "3s ago") update smoothly and
+ * consistently between market refresh cycles.
+ */
+
+/**
+ * Formats a Date object into a readable date + time string.
+ * Example: 16 Apr 2026, 14:32:10
+ */
+function formatStatusDateTime(date) {
+    return date.toLocaleString(undefined, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
+}
+
+/**
+ * Computes a human-readable relative time string based on
+ * the difference between the current time and a given timestamp.
+ *
+ * Used by the status UI to communicate data freshness
+ * without requiring the user to interpret absolute times.
+ */
+function getRelativeTimeString(date) {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
+    if (seconds < 60) {
+        return `${seconds}s ago`;
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}m ago`;
+}
+
+/**
+ * Renders market update status:
+ * - loading
+ * - success (last updated)
+ * - error
+ * - idle
+ */
+function renderMarketStatus() {
+    const statusElement = document.getElementById("market-status");
+
+    if (!statusElement) {
+        return;
+    }
+
+    // Loading state
+    if (marketStatusType === "loading") {
+        statusElement.textContent =
+            `Updating market data... Auto-updating every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
+        return;
+    }
+
+    // Error state
+    if (marketStatusType === "error") {
+        if (lastUpdatedTime) {
+            const absolute = formatStatusDateTime(lastUpdatedTime);
+            const relative = getRelativeTimeString(lastUpdatedTime);
+
+            statusElement.textContent =
+                `Last update failed. Showing data from ${absolute} (${relative}). Retrying every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
+        } else {
+            statusElement.textContent =
+                `Last update failed. Retrying every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
+        }
+        return;
+    }
+
+    // Success state (normal operation)
+    if (lastUpdatedTime) {
+        const absolute = formatStatusDateTime(lastUpdatedTime);
+        const relative = getRelativeTimeString(lastUpdatedTime);
+
+        statusElement.textContent =
+            `Auto-updating every ${REFRESH_INTERVAL_MS / 1000} seconds · Last updated: ${absolute} (${relative})`;
+        return;
+    }
+
+    // Idle state (before first successful load)
+    statusElement.textContent =
+        `Auto-updating every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
+}
+
+/**
+ * Schedules market status re-rendering in sync with the
+ * next whole-second boundary so relative time text
+ * updates more consistently.
+ */
+function scheduleNextMarketStatusRender() {
+    renderMarketStatus();
+
+    const now = Date.now();
+    const delayUntilNextSecond = 1000 - (now % 1000);
+
+    marketStatusTimer = setTimeout(scheduleNextMarketStatusRender, delayUntilNextSecond);
+}
+
+/**
+ * Starts live market status ticking if it has not
+ * already been started.
+ */
+function startMarketStatusTicker() {
+    if (marketStatusTimer !== null) {
+        return;
+    }
+
+    scheduleNextMarketStatusRender();
+}
+
+/**
+ * Stops live market status ticking if needed.
+ */
+function stopMarketStatusTicker() {
+    if (marketStatusTimer === null) {
+        return;
+    }
+
+    clearTimeout(marketStatusTimer);
+    marketStatusTimer = null;
+}
 
 
 /**
@@ -73,11 +231,18 @@ let lastManualRefreshTime = 0;
  *
  * The loading guard ensures that only one fetch/render
  * cycle runs at a time.
+ *
+ * Returns:
+ * - true if the market refresh completed successfully
+ * - false if the refresh failed or was skipped
  */
 async function loadMarket() {
     if (isLoadingMarket) {
-        return;
+        return false;
     }
+
+    marketStatusType = "loading";
+    renderMarketStatus();
 
     isLoadingMarket = true;
 
@@ -86,17 +251,25 @@ async function loadMarket() {
 
         const insights = generateInsights(latestQuotes);
 
+        lastUpdatedTime = new Date();
+        marketStatusType = "success";
+
         renderWatchlist(latestQuotes);
         renderPortfolioSummary(latestQuotes);
         renderHoldings(latestQuotes);
         renderTransactions();
         renderInsightSummary(insights);
         renderInsights(insights);
+
+        return true;
     } catch (error) {
         console.error("Failed to load market data:", error);
-        alert("Unable to refresh market data right now. Please try again shortly.");
+        marketStatusType = "error";
+        alert(`Unable to refresh market data right now: ${error.message}`);
+        return false;
     } finally {
         isLoadingMarket = false;
+        renderMarketStatus();
     }
 }
 
@@ -162,27 +335,57 @@ function handleSell(symbol, price) {
 /**
  * Starts automatic market refreshing if it has not
  * already been started.
+ *
+ * Unlike setInterval(), this schedules the next refresh
+ * only after the current refresh cycle has completed.
+ * This keeps the user-visible gap between updates closer
+ * to the configured refresh interval.
  */
 function startMarketAutoRefresh() {
     if (marketRefreshTimer !== null) {
         return;
     }
 
-    marketRefreshTimer = setInterval(loadMarket, REFRESH_INTERVAL_MS);
+    scheduleNextMarketRefresh();
+}
+
+/**
+ * Schedules the next automatic market refresh.
+ */
+function scheduleNextMarketRefresh() {
+    marketRefreshTimer = setTimeout(async () => {
+        await loadMarket();
+        scheduleNextMarketRefresh();
+    }, REFRESH_INTERVAL_MS);
 }
 
 /**
  * Stops automatic market refreshing if a timer is active.
- * Not required for basic 2.1 behaviour, but useful for
- * future upgrades such as pause/resume controls.
  */
 function stopMarketAutoRefresh() {
     if (marketRefreshTimer === null) {
         return;
     }
 
-    clearInterval(marketRefreshTimer);
+    clearTimeout(marketRefreshTimer);
     marketRefreshTimer = null;
+}
+
+/**
+ * Resets the automatic market refresh timer so the next
+ * polling cycle starts counting from the latest manual
+ * refresh.
+ *
+ * This prevents the previous auto-refresh schedule from
+ * firing too soon after a user-triggered refresh.
+ */
+function resetMarketAutoRefresh() {
+    if (marketRefreshTimer !== null) {
+        clearTimeout(marketRefreshTimer);
+        marketRefreshTimer = null;
+    }
+
+    startMarketAutoRefresh();
 }
 
 
@@ -238,7 +441,9 @@ function updateRefreshButtonState() {
  * - If the market is already loading, ignore the click.
  * - If the cooldown period has not passed, ignore the click.
  * - Otherwise, record the manual refresh time, update the
- *   button state immediately, and trigger a market refresh.
+ *   button state immediately, trigger a market refresh,
+ *   and restart the auto-refresh timer only if the refresh
+ *   succeeds.
  */
 async function handleManualRefresh() {
     if (isLoadingMarket) {
@@ -255,7 +460,11 @@ async function handleManualRefresh() {
     lastManualRefreshTime = Date.now();
     updateRefreshButtonState();
 
-    await loadMarket();
+    const didRefreshSucceed = await loadMarket();
+
+    if (didRefreshSucceed) {
+        resetMarketAutoRefresh();
+    }
 }
 
 
@@ -263,25 +472,42 @@ async function handleManualRefresh() {
  * =========================================
  * INITIALISATION
  * =========================================
- * Initial page setup:
- * - bind the manual refresh button
- * - load market data immediately
- * - start timed auto-refresh
- * - keep button cooldown text updated
+ * Sets up the application on page load:
+ * - binds user interaction handlers
+ * - performs the initial market data fetch
+ * - starts automatic market polling only after
+ *   the first load has completed
+ * - starts UI update loops for dynamic elements
+ *
+ * This ensures the first visible auto-refresh gap
+ * matches the configured refresh interval rather
+ * than being shortened by the duration of the
+ * initial market load.
  */
+async function initialiseApp() {
+    // Bind manual refresh button if it exists
+    document.getElementById("refresh-btn")?.addEventListener("click", handleManualRefresh);
 
-// Bind manual refresh button if it exists
-document.getElementById("refresh-btn")?.addEventListener("click", handleManualRefresh);
+    /**
+     * Updates the refresh button cooldown display every second
+     * so the countdown (e.g. "Refresh in 5s") remains accurate.
+     */
+    setInterval(updateRefreshButtonState, 1000);
 
-// Load market data immediately on page load
-loadMarket();
+    // Start live market status ticking
+    startMarketStatusTicker();
 
-// Start automatic timed refresh cycle
-startMarketAutoRefresh();
+    // Render initial UI states
+    renderMarketStatus();
+    updateRefreshButtonState();
 
-// Update the button label every second so the cooldown
-// countdown stays visually accurate for the user
-setInterval(updateRefreshButtonState, 1000);
+    // Perform the first market load before starting
+    // the automatic refresh cycle
+    await loadMarket();
 
-// Set the initial button state on first load
-updateRefreshButtonState();
+    // Start automatic timed refresh cycle only after
+    // the initial load has completed
+    startMarketAutoRefresh();
+}
+
+initialiseApp();

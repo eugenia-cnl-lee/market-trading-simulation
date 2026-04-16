@@ -172,6 +172,49 @@ p {
 
 /**
  * =========================================
+ * MARKET HEADER
+ * =========================================
+ * Aligns the market title and refresh control
+ * on a single row while allowing wrap on
+ * narrower or zoomed-in screens.
+ */
+.market-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.market-header-row h2 {
+    margin-bottom: 0;
+}
+
+
+/**
+ * =========================================
+ * MARKET STATUS BAR
+ * =========================================
+ * Displays live update information:
+ * - auto-refresh interval
+ * - last updated time
+ * - loading / error states
+ */
+
+.market-status {
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background-color: #f5f7fb;
+    font-size: 0.95rem;
+    color: #5f6b7a;
+}
+
+
+/**
+ * =========================================
  * CONDITIONAL COLOUR INDICATORS
  * =========================================
  * Used for:
