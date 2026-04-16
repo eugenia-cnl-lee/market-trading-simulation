@@ -22,11 +22,17 @@
 
 /**
  * =========================================
- * WATCHLIST CONFIGURATION
+ * STOCK UNIVERSE AND WATCHLIST STATE
  * =========================================
- * Defines which stocks are shown in the market view.
+ * STOCK_UNIVERSE:
+ * Backend-generated stock universe with metadata
+ * such as sector and style.
+ *
+ * selectedSymbols:
+ * Smaller active watchlist used for live market fetching.
  */
-const WATCHLIST = ["AAPL", "MSFT", "TSLA", "NVDA", "AMZN"];
+let STOCK_UNIVERSE = [];
+let selectedSymbols = [];
 
 
 /**
@@ -68,11 +74,11 @@ console.log("MANUAL_REFRESH_COOLDOWN_MS:", MANUAL_REFRESH_COOLDOWN_MS);
  * - portfolio calculations
  * - insights generation
  * 
- * latestMarketSession:
- * Stores the most recent market session data for the
- * configured exchange.
+ * latestMarketSessions:
+ * Stores the most recent market session data for each
+ * exchange represented in the active watchlist.
  *
- * This is used to communicate whether the market is:
+ * This is used to communicate whether each exchange is:
  * - open
  * - pre-market
  * - post-market
@@ -80,7 +86,7 @@ console.log("MANUAL_REFRESH_COOLDOWN_MS:", MANUAL_REFRESH_COOLDOWN_MS);
  *
  * Unlike marketStatusType, this reflects real-world
  * exchange conditions rather than application refresh state.
- *
+ * 
  * isLoadingMarket:
  * Prevents overlapping refresh cycles. If one market
  * fetch is already in progress, another one should not
@@ -111,7 +117,7 @@ console.log("MANUAL_REFRESH_COOLDOWN_MS:", MANUAL_REFRESH_COOLDOWN_MS);
  * - "error"    → no valid quotes could be retrieved
  */
 let latestQuotes = {};
-let latestMarketSession = null;
+let latestMarketSessions = {};
 let isLoadingMarket = false;
 let marketRefreshTimer = null;
 let lastManualRefreshTime = 0;
@@ -119,6 +125,92 @@ let lastUpdatedTime = null;
 let lastAttemptedUpdateTime = null;
 let marketStatusType = "idle";
 let marketStatusTimer = null;
+
+
+/**
+ * Returns metadata for a given symbol
+ */
+function getStockMeta(symbol) {
+    return STOCK_UNIVERSE.find(s => s.symbol === symbol) || {
+        symbol,
+        exchange: "US",
+        region: "North America",
+        sector: "Other",
+        style: "core"
+    };
+}
+
+/**
+ * Extract unique exchanges from selected symbols
+ */
+function getSelectedExchanges() {
+    const exchanges = new Set();
+
+    for (const symbol of selectedSymbols) {
+        const meta = getStockMeta(symbol);
+        if (meta?.exchange) {
+            exchanges.add(meta.exchange);
+        }
+    }
+
+    return [...exchanges];
+}
+
+/**
+ * Fetch sessions for all exchanges
+ */
+async function loadMarketSessions() {
+    const exchanges = getSelectedExchanges();
+    const sessions = {};
+
+    for (const exchange of exchanges) {
+        try {
+            sessions[exchange] = await fetchMarketSession(exchange);
+        } catch (error) {
+            console.error(`Failed session for ${exchange}`, error);
+            sessions[exchange] = null;
+        }
+    }
+
+    latestMarketSessions = sessions;
+}
+
+
+/**
+ * Fetches the automated stock universe from the backend.
+ *
+ * Behaviour:
+ * - loads a generated US stock universe with metadata
+ * - stores the full universe in shared state
+ * - selects a smaller default active watchlist for live quotes
+ *
+ * Design Note:
+ * The backend owns universe generation and caching so the
+ * frontend stays lightweight and does not fan out many
+ * provider requests directly.
+ */
+async function loadStockUniverse() {
+    const response = await fetch("/api/stock-universe?limit=30");
+
+    if (!response.ok) {
+        throw new Error(`Failed to load stock universe: HTTP ${response.status}`);
+    }
+
+    const universe = await response.json();
+
+    if (!Array.isArray(universe) || universe.length === 0) {
+        throw new Error("Stock universe is empty or invalid");
+    }
+
+    STOCK_UNIVERSE = universe;
+
+    // Keep the active watchlist smaller than the full universe
+    // to reduce live quote load and keep the UI manageable.
+    selectedSymbols = STOCK_UNIVERSE.slice(0, 8).map(stock => stock.symbol);
+
+    console.log("Loaded stock universe:", STOCK_UNIVERSE.length);
+    console.log("Selected symbols:", selectedSymbols);
+}
 
 
 /**
@@ -270,17 +362,11 @@ async function loadMarket() {
     lastAttemptedUpdateTime = new Date();
 
     try {
-        const marketResult = await getQuotes(WATCHLIST, latestQuotes);
+        const marketResult = await getQuotes(selectedSymbols, latestQuotes);
         latestQuotes = marketResult.quotes;
 
-        // Fetch market session separately so quote updates can still
-        // succeed even if session data is unavailable
-        try {
-            latestMarketSession = await fetchMarketSession("US");
-        } catch (error) {
-            console.error("Failed to fetch market session:", error);
-            latestMarketSession = null;
-        }
+        // Multi-exchange session fetch
+        await loadMarketSessions();
 
         const insights = generateInsights(latestQuotes);
 
@@ -295,7 +381,7 @@ async function loadMarket() {
         }
 
         renderWatchlist(latestQuotes);
-        renderMarketSession(latestMarketSession);
+        renderMarketSession(latestMarketSessions);
         renderPortfolioSummary(latestQuotes);
         renderHoldings(latestQuotes);
         renderTransactions();
@@ -345,7 +431,10 @@ async function loadMarket() {
 function handleBuy(symbol) {
     const quote = latestQuotes[symbol];
 
-    const result = buyStock(symbol, quote, latestMarketSession);
+    const meta = getStockMeta(symbol);
+    const session = meta ? latestMarketSessions[meta.exchange] : null;
+
+    const result = buyStock(symbol, quote, session);
 
     alert(result.message);
 
@@ -369,7 +458,10 @@ function handleBuy(symbol) {
 function handleSell(symbol) {
     const quote = latestQuotes[symbol];
 
-    const result = sellStock(symbol, quote, latestMarketSession);
+    const meta = getStockMeta(symbol);
+    const session = meta ? latestMarketSessions[meta.exchange] : null;
+
+    const result = sellStock(symbol, quote, session);
 
     alert(result.message);
 
@@ -563,6 +655,10 @@ async function initialiseApp() {
     // Render initial UI states
     renderMarketStatus();
     updateRefreshButtonState();
+
+    // Load automated stock universe before the first
+    // market refresh so watchlist fetching has symbols to use
+    await loadStockUniverse();
 
     // Perform the first market load before starting
     // the automatic refresh cycle

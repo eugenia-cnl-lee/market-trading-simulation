@@ -23,38 +23,33 @@
  * =========================================
  * WATCHLIST RENDERING
  * =========================================
- * Displays all stocks in the market watchlist.
+ * Displays all stocks in the active market watchlist.
  * Each stock includes:
+ * - symbol
+ * - market metadata (exchange, region, sector, style)
  * - price
  * - change
  * - buy/sell actions routed through the execution layer
  * - quote status (live, stale, unavailable)
+ * - exchange-specific market session state where available
  *
  * Behaviour:
  * - Renders normalised quote data from the shared market state
+ * - Reads stock metadata from the backend-generated stock universe
  * - Displays fallback values when quotes are stale
  * - Handles unavailable or invalid quotes gracefully
  * - Applies visual indicators for price movement and quote status
- * - Differentiates between:
- *   - live quotes (fresh data)
- *   - stale quotes (fallback to previous data)
- *   - unavailable quotes (no valid data)
- *
- * This function assumes all quote data has already been:
- * - fetched
- * - normalised
- * - validated
- * by the market data layer.
+ * - Supports per-exchange market context without making the UI
+ *   responsible for market session fetching
  *
  * Design Note:
  * This function focuses purely on presentation, ensuring that
- * data reliability concerns (e.g. validation, fallback handling)
- * remain outside the UI layer. It communicates quote freshness
- * and availability to the user without altering the underlying data.
- * 
- * By separating data validation from rendering, this function
- * ensures that the UI remains predictable and consistent,
- * even when underlying market data is incomplete or delayed.
+ * data reliability concerns, stock universe management, and
+ * market session retrieval remain outside the UI layer.
+ *
+ * By separating metadata, quote state, and rendering concerns,
+ * the watchlist becomes easier to extend later with selector UI,
+ * region/sector grouping, and richer analytics visualisations.
  */
 function renderWatchlist(quotes) {
     const watchlist = document.getElementById("watchlist");
@@ -68,6 +63,18 @@ function renderWatchlist(quotes) {
 
     for (const symbol in quotes) {
         const data = quotes[symbol];
+        const stockMeta = typeof getStockMeta === "function"
+            ? getStockMeta(symbol)
+            : null;
+
+        const exchange = stockMeta?.exchange ?? "Unknown exchange";
+        const region = stockMeta?.region ?? "Unknown region";
+        const sector = stockMeta?.sector ?? "Unknown sector";
+        const style = stockMeta?.style ?? "Unknown style";
+
+        const sessionData = stockMeta?.exchange && latestMarketSessions
+            ? latestMarketSessions[stockMeta.exchange]
+            : null;
 
         const stockCard = document.createElement("div");
         stockCard.className = "stock-card";
@@ -86,11 +93,31 @@ function renderWatchlist(quotes) {
                 ? "Stale"
                 : "Live";
 
+        let sessionLabel = "Session unavailable";
+
+        if (sessionData) {
+            if (sessionData.session === "regular") {
+                sessionLabel = "Open";
+            } else if (sessionData.session === "pre-market") {
+                sessionLabel = "Pre-Market";
+            } else if (sessionData.session === "post-market") {
+                sessionLabel = "Post-Market";
+            } else {
+                sessionLabel = "Closed";
+            }
+        }
+
         stockCard.innerHTML = `
             <h2 class="stock-symbol">${symbol}</h2>
+            <p class="stock-meta"><strong>Exchange:</strong> ${exchange}</p>
+            <p class="stock-meta"><strong>Region:</strong> ${region}</p>
+            <p class="stock-meta"><strong>Sector:</strong> ${sector}</p>
+            <p class="stock-meta"><strong>Style:</strong> ${style}</p>
+            <p class="stock-meta"><strong>Session:</strong> ${sessionLabel}</p>
+
             <p class="stock-price">Price: ${priceText}</p>
             <p class="stock-change">Change: ${changeText}</p>
-            <p class="stock-state">Status: ${quoteStateText}</p>
+            <p class="stock-state">Quote Status: ${quoteStateText}</p>
 
             <button class="buy-btn" onclick="handleBuy('${symbol}')">Buy</button>
             <button class="sell-btn" onclick="handleSell('${symbol}')">Sell</button>
@@ -349,41 +376,54 @@ function renderMarketStatus() {
  * application state, reducing ambiguity when prices remain
  * static during non-trading hours.
  */
-function renderMarketSession(sessionData) {
+function renderMarketSession(sessionMap) {
     const sessionElement = document.getElementById("market-session");
 
-    if (!sessionElement) return;
+    if (!sessionElement) {
+        return;
+    }
 
-    if (!sessionData) {
+    if (!sessionMap || Object.keys(sessionMap).length === 0) {
         sessionElement.textContent = "Market Session: Unavailable";
         return;
     }
 
-    let sessionLabel = "Closed";
-    let symbol = "◌";
-    let className = "session-closed";
+    const sessionLines = [];
 
-    if (sessionData.session === "regular") {
-        sessionLabel = "Open";
-        symbol = "●";
-        className = "session-open";
-    } else if (sessionData.session === "pre-market") {
-        sessionLabel = "Pre-Market";
-        symbol = "○";
-        className = "session-pre";
-    } else if (sessionData.session === "post-market") {
-        sessionLabel = "Post-Market";
-        symbol = "◐";
-        className = "session-post";
+    for (const exchange in sessionMap) {
+        const sessionData = sessionMap[exchange];
+
+        let sessionLabel = "Closed";
+        let symbol = "◌";
+        let className = "session-closed";
+
+        if (sessionData?.session === "regular") {
+            sessionLabel = "Open";
+            symbol = "●";
+            className = "session-open";
+        } else if (sessionData?.session === "pre-market") {
+            sessionLabel = "Pre-Market";
+            symbol = "○";
+            className = "session-pre";
+        } else if (sessionData?.session === "post-market") {
+            sessionLabel = "Post-Market";
+            symbol = "◐";
+            className = "session-post";
+        }
+
+        sessionLines.push(`
+            <div class="market-session-row">
+                <span class="market-session-label ${className}">
+                    ${exchange}: ${symbol} ${sessionLabel}
+                </span>
+            </div>
+        `);
     }
 
     sessionElement.innerHTML = `
-        <span class="market-session-label ${className}">
-            ${symbol} ${sessionLabel}
-        </span>
-        <br>
+        ${sessionLines.join("")}
         <span class="market-session-note">
-            Prices may remain unchanged outside regular trading hours.
+            Session state is now tracked separately for each exchange in the active watchlist.
         </span>
     `;
 }
@@ -394,6 +434,13 @@ function renderMarketSession(sessionData) {
  * TRANSACTION HISTORY RENDERING
  * =========================================
  * Displays all past trades in reverse chronological order.
+ *
+ * Behaviour:
+ * - Supports both legacy transaction records and
+ *   execution-aware transaction records
+ * - Prefers execution price when available so the UI
+ *   reflects actual trade outcomes rather than idealised
+ *   displayed quote prices
  */
 function renderTransactions() {
     const transactionsContainer = document.getElementById("transactions");
@@ -419,7 +466,7 @@ function renderTransactions() {
 
         transactionCard.innerHTML = `
             <p><strong>${transaction.type}</strong> ${transaction.symbol}</p>
-            <p>Price: $${transaction.price.toFixed(2)}</p>
+            <p>Execution Price: $${(transaction.executionPrice ?? transaction.price).toFixed(2)}</p>
             <p>Time: ${transaction.time}</p>
         `;
 
