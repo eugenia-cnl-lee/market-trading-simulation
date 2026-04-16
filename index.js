@@ -1,3 +1,26 @@
+/**
+ * index.js
+ *
+ * Backend entry point for the trading simulation server (Bun).
+ *
+ * Owns:
+ * - Serving static frontend files from the www directory
+ * - Exposing backend API routes (e.g. /api/quote)
+ * - Handling communication with external data providers
+ * - Providing a secure boundary for API keys
+ *
+ * Does not own:
+ * - Frontend application logic
+ * - Portfolio calculations
+ * - UI rendering
+ *
+ * Design Note:
+ * This file isolates external data access from the frontend,
+ * allowing the system to switch data sources (e.g. REST → WebSocket)
+ * without affecting the rest of the application.
+ */
+
+
 const API_KEY = "d7fpushr01qqb8rh69p0d7fpushr01qqb8rh69pg";
 
 // Logging for easy debugging

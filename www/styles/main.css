@@ -1,4 +1,25 @@
 /**
+ * main.css
+ *
+ * Central stylesheet for the trading simulation dashboard.
+ *
+ * Owns:
+ * - Visual layout and spacing
+ * - Typography and component styling
+ * - Financial UI cues (e.g. gain/loss colours)
+ *
+ * Does not own:
+ * - Application logic
+ * - Data processing
+ * - Behavioural state
+ *
+ * Design Note:
+ * Styling is separated to maintain a clear distinction between
+ * presentation and application logic, improving maintainability.
+ */
+
+ 
+/**
  * =========================================
  * GLOBAL PAGE STYLING
  * =========================================
@@ -126,6 +147,28 @@ p {
 .stock-price,
 .stock-change {
     font-size: 0.95rem;
+}
+
+
+/**
+ * =========================================
+ * QUOTE STATE VISUAL INDICATORS
+ * =========================================
+ * Provides visual differentiation for:
+ * - stale quotes (fallback data)
+ * - invalid/unavailable quotes
+ *
+ * These styles communicate data reliability
+ * without affecting application logic.
+ */
+.stale-quote {
+    opacity: 0.85;
+    border: 2px dashed orange;
+}
+
+.invalid-quote {
+    opacity: 0.85;
+    border: 2px dashed grey;
 }
 
 

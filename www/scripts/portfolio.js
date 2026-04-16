@@ -1,4 +1,27 @@
 /**
+ * portfolio.js
+ *
+ * Core paper trading and portfolio management module.
+ *
+ * Owns:
+ * - Portfolio state (cash, holdings, transactions)
+ * - Buy and sell operations
+ * - Average cost and position tracking
+ * - Portfolio valuation and profit/loss calculations
+ *
+ * Does not own:
+ * - Market data fetching
+ * - UI rendering
+ * - External data validation
+ *
+ * Design Note:
+ * This module encapsulates trading logic and state,
+ * ensuring that portfolio behaviour remains independent
+ * from data sources and presentation layers.
+ */
+
+
+/**
  * =========================================
  * PORTFOLIO STATE
  * =========================================

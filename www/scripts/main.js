@@ -1,4 +1,26 @@
 /**
+ * main.js
+ *
+ * Application coordinator for the trading simulation frontend.
+ *
+ * Owns:
+ * - Initialising application state
+ * - Connecting market data, portfolio, analytics, and UI modules
+ * - Managing update cycles and user interactions
+ * - Triggering re-renders after state changes
+ *
+ * Does not own:
+ * - Market data fetching implementation
+ * - Portfolio calculation logic
+ * - DOM rendering details
+ *
+ * Design Note:
+ * This file orchestrates the system by coordinating modules,
+ * ensuring a clean separation between data, logic, and presentation.
+ */
+
+
+/**
  * =========================================
  * WATCHLIST CONFIGURATION
  * =========================================
@@ -29,13 +51,19 @@ const MANUAL_REFRESH_COOLDOWN_MS = 7000;  // Manual refresh cooldown: 7 seconds
 console.log("REFRESH_INTERVAL_MS:", REFRESH_INTERVAL_MS);
 console.log("MANUAL_REFRESH_COOLDOWN_MS:", MANUAL_REFRESH_COOLDOWN_MS);
 
+
 /**
  * =========================================
  * SHARED MARKET STATE
  * =========================================
  * latestQuotes:
- * Stores the most recently fetched quote data.
- * This acts as the shared quote source for:
+ * Stores the most recent processed quote data for each symbol.
+ * Each quote is normalised and includes:
+ * - price, change, changePercent
+ * - validity status (isValid)
+ * - freshness status (isStale)
+ *
+ * This acts as the shared data source for:
  * - watchlist rendering
  * - portfolio calculations
  * - insights generation
@@ -46,42 +74,51 @@ console.log("MANUAL_REFRESH_COOLDOWN_MS:", MANUAL_REFRESH_COOLDOWN_MS);
  * begin until it finishes.
  *
  * marketRefreshTimer:
- * Stores the interval ID for timed auto-refresh.
+ * Stores the timer ID for the scheduled auto-refresh loop.
  *
  * lastManualRefreshTime:
  * Tracks when the user last triggered a manual refresh.
  * Used to enforce the cooldown period.
- * 
  *
  * lastUpdatedTime:
  * Stores the timestamp of the most recent successful refresh.
+ * This is used for user-facing freshness indicators.
+ * 
+ * lastAttemptedUpdateTime:
+ * Stores the timestamp of the most recent refresh attempt,
+ * regardless of whether it succeeded or failed.
  *
  * marketStatusType:
  * Tracks the current update state for UI messaging.
+ * Possible values:
+ * - "idle"     → no data loaded yet
+ * - "loading"  → refresh in progress
+ * - "success"  → all quotes updated successfully
+ * - "partial"  → some quotes updated, others stale
+ * - "error"    → no valid quotes could be retrieved
  */
 let latestQuotes = {};
 let isLoadingMarket = false;
 let marketRefreshTimer = null;
 let lastManualRefreshTime = 0;
 let lastUpdatedTime = null;
+let lastAttemptedUpdateTime = null;
 let marketStatusType = "idle";
 let marketStatusTimer = null;
 
 
 /**
  * =========================================
- * MARKET STATUS UI
+ * MARKET STATUS TIMING
  * =========================================
- * Manages the display of live market update information,
- * including:
- * - current update state (loading, success, error, idle)
- * - last successful update timestamp (absolute + relative)
- * - auto-refresh interval messaging
+ * Supports the live market status display by:
+ * - formatting absolute and relative timestamps
+ * - scheduling status re-renders over time
+ * - keeping relative time indicators in sync
  *
- * This section separates:
- * - status computation (timestamps, state)
- * - status rendering (DOM updates)
- * - status ticking (time-based UI updates)
+ * This section does not render DOM elements directly.
+ * Instead, it supports the UI layer by triggering
+ * periodic re-renders of the market status display.
  *
  * A dedicated ticker is used to re-render the status in
  * sync with whole-second boundaries. This ensures relative
@@ -108,8 +145,9 @@ function formatStatusDateTime(date) {
  * Computes a human-readable relative time string based on
  * the difference between the current time and a given timestamp.
  *
- * Used by the status UI to communicate data freshness
- * without requiring the user to interpret absolute times.
+ * Used by the status UI to communicate data freshness,
+ * especially when distinguishing between live updates,
+ * stale data, and delayed refresh outcomes.
  */
 function getRelativeTimeString(date) {
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -122,61 +160,12 @@ function getRelativeTimeString(date) {
     return `${minutes}m ago`;
 }
 
-/**
- * Renders market update status:
- * - loading
- * - success (last updated)
- * - error
- * - idle
- */
-function renderMarketStatus() {
-    const statusElement = document.getElementById("market-status");
-
-    if (!statusElement) {
-        return;
-    }
-
-    // Loading state
-    if (marketStatusType === "loading") {
-        statusElement.textContent =
-            `Updating market data... Auto-updating every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
-        return;
-    }
-
-    // Error state
-    if (marketStatusType === "error") {
-        if (lastUpdatedTime) {
-            const absolute = formatStatusDateTime(lastUpdatedTime);
-            const relative = getRelativeTimeString(lastUpdatedTime);
-
-            statusElement.textContent =
-                `Last update failed. Showing data from ${absolute} (${relative}). Retrying every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
-        } else {
-            statusElement.textContent =
-                `Last update failed. Retrying every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
-        }
-        return;
-    }
-
-    // Success state (normal operation)
-    if (lastUpdatedTime) {
-        const absolute = formatStatusDateTime(lastUpdatedTime);
-        const relative = getRelativeTimeString(lastUpdatedTime);
-
-        statusElement.textContent =
-            `Auto-updating every ${REFRESH_INTERVAL_MS / 1000} seconds · Last updated: ${absolute} (${relative})`;
-        return;
-    }
-
-    // Idle state (before first successful load)
-    statusElement.textContent =
-        `Auto-updating every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
-}
 
 /**
  * Schedules market status re-rendering in sync with the
  * next whole-second boundary so relative time text
- * updates more consistently.
+ * updates more consistently, even when no new market
+ * data is fetched between refresh cycles.
  */
 function scheduleNextMarketStatusRender() {
     renderMarketStatus();
@@ -216,7 +205,7 @@ function stopMarketStatusTicker() {
  * =========================================
  * MARKET LOADING
  * =========================================
- * Fetches fresh quote data for the current watchlist,
+ * Fetches and processes quote data for the current watchlist,
  * then updates all major parts of the interface:
  * - market watchlist
  * - portfolio summary
@@ -225,16 +214,30 @@ function stopMarketStatusTicker() {
  * - insight summary
  * - detailed insights
  *
- * This function is the single refresh pipeline used by:
+ * This function acts as the single refresh pipeline used by:
  * - automatic timed polling
  * - manual refresh button clicks
  *
- * The loading guard ensures that only one fetch/render
- * cycle runs at a time.
+ * Behaviour:
+ * - Prevents overlapping refresh cycles using a loading guard
+ * - Records both attempted and successful update timestamps
+ * - Processes quote data through a validation and fallback layer
+ * - Supports partial success (some quotes may be stale)
+ *
+ * Refresh outcomes:
+ * - success → all quotes updated successfully
+ * - partial → some quotes updated, others reused from previous state
+ * - error   → no valid quotes available
  *
  * Returns:
- * - true if the market refresh completed successfully
- * - false if the refresh failed or was skipped
+ * - true if at least one valid quote is available after refresh
+ * - false if the refresh produced no usable data or was skipped
+ *
+ * Design Note:
+ * This function separates data fetching reliability concerns
+ * from UI rendering and portfolio logic, ensuring that invalid
+ * or missing market data does not propagate into the rest of
+ * the system.
  */
 async function loadMarket() {
     if (isLoadingMarket) {
@@ -245,14 +248,23 @@ async function loadMarket() {
     renderMarketStatus();
 
     isLoadingMarket = true;
+    lastAttemptedUpdateTime = new Date();
 
     try {
-        latestQuotes = await getQuotes(WATCHLIST);
+        const marketResult = await getQuotes(WATCHLIST, latestQuotes);
+        latestQuotes = marketResult.quotes;
 
         const insights = generateInsights(latestQuotes);
 
-        lastUpdatedTime = new Date();
-        marketStatusType = "success";
+        if (marketResult.allSucceeded) {
+            lastUpdatedTime = new Date();
+            marketStatusType = "success";
+        } else if (marketResult.partiallySucceeded) {
+            lastUpdatedTime = new Date();
+            marketStatusType = "partial";
+        } else {
+            marketStatusType = "error";
+        }
 
         renderWatchlist(latestQuotes);
         renderPortfolioSummary(latestQuotes);
@@ -261,7 +273,7 @@ async function loadMarket() {
         renderInsightSummary(insights);
         renderInsights(insights);
 
-        return true;
+        return !marketResult.allFailed;
     } catch (error) {
         console.error("Failed to load market data:", error);
         marketStatusType = "error";
