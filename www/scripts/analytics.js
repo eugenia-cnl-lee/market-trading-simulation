@@ -5,7 +5,7 @@
  *
  * Owns:
  * - Analysis of portfolio structure and trading behaviour
- * - Generation of insights (e.g. concentration, diversification)
+ * - Generation of insights (e.g. concentration, diversification, performance interpretation)
  * - User-facing feedback and decision support
  *
  * Does not own:
@@ -17,6 +17,9 @@
  * This module adds an interpretive layer on top of processed
  * portfolio and market state, differentiating the project by
  * providing meaningful insights rather than acting as a simple tracker.
+ * 
+ * This module consumes processed portfolio and market metrics
+ * without owning the underlying accounting model.
  */
 
 
@@ -38,16 +41,23 @@
  *
  * Design Note:
  * This module assumes all quote data has already been
- * validated and normalised. It focuses only on interpreting
- * usable data, maintaining a clear separation between
- * data reliability handling and analytical logic.
+ * validated and normalised, and that core accounting
+ * metrics are produced by the portfolio module.
+ *
+ * It focuses only on interpreting usable data and
+ * portfolio outputs, maintaining a clear separation
+ * between accounting logic, data reliability handling,
+ * and analytical interpretation.
  */
 function generateInsights(quotes) {
     const insights = [];
 
+    // Use centralised portfolio metrics instead of recalculating
+    // financial values within the analytics layer
     const holdingSymbols = Object.keys(portfolio.holdings);
-    const holdingsValue = calculateHoldingsValue(quotes);
-    const totalValue = calculateTotalPortfolioValue(quotes);
+    const portfolioMetrics = getPortfolioMetrics(quotes);
+    const holdingsValue = portfolioMetrics.holdingsValue;
+    const totalValue = portfolioMetrics.totalPortfolioValue;
 
     /**
      * Determines whether a quote can be safely used for
@@ -93,15 +103,13 @@ function generateInsights(quotes) {
     let largestHoldingValue = 0;
 
     for (const symbol of holdingSymbols) {
-        const holding = portfolio.holdings[symbol];
-        const quote = quotes[symbol];
+        const performance = getHoldingPerformance(symbol, quotes[symbol]);
 
-        if (!isUsableQuote(quote)) {
+        if (!performance || performance.marketValue === null) {
             continue;
         }
 
-        const currentPrice = quote.price;
-        const marketValue = holding.quantity * currentPrice;
+        const marketValue = performance.marketValue;
 
         if (marketValue > largestHoldingValue) {
             largestHoldingValue = marketValue;
@@ -200,19 +208,7 @@ function generateInsights(quotes) {
      * Invalid or unavailable quotes are excluded so
      * performance insights are not based on missing data.
      */
-    let totalUnrealisedPnL = 0;
-
-        for (const symbol of holdingSymbols) {
-            const holding = portfolio.holdings[symbol];
-            const quote = quotes[symbol];
-
-            if (!isUsableQuote(quote)) {
-                continue;
-            }
-
-            const currentPrice = quote.price;
-            totalUnrealisedPnL += (currentPrice - holding.avgPrice) * holding.quantity;
-        }
+    const totalUnrealisedPnL = portfolioMetrics.unrealisedPnL;
 
     if (holdingSymbols.length > 0) {
         if (totalUnrealisedPnL > 0) {

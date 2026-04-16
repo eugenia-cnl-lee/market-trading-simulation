@@ -127,6 +127,13 @@ function renderWatchlist(quotes) {
  * - cash balance
  * - holdings value
  * - total portfolio value
+ * - realised profit/loss
+ * - unrealised profit/loss
+ * - total return percentage
+ *
+ * Design Note:
+ * This function renders portfolio metrics produced by the
+ * portfolio module rather than calculating them in the UI layer.
  */
 function renderPortfolioSummary(quotes) {
     const summary = document.getElementById("portfolio-summary");
@@ -137,13 +144,15 @@ function renderPortfolioSummary(quotes) {
         return;
     }
 
-    const holdingsValue = calculateHoldingsValue(quotes);
-    const totalValue = calculateTotalPortfolioValue(quotes);
-
+    const metrics = getPortfolioMetrics(quotes);
+    
     summary.innerHTML = `
-        <p><strong>Cash:</strong> $${portfolio.cash.toFixed(2)}</p>
-        <p><strong>Holdings Value:</strong> $${holdingsValue.toFixed(2)}</p>
-        <p><strong>Total Portfolio Value:</strong> $${totalValue.toFixed(2)}</p>
+        <p><strong>Cash:</strong> $${metrics.cash.toFixed(2)}</p>
+        <p><strong>Holdings Value:</strong> $${metrics.holdingsValue.toFixed(2)}</p>
+        <p><strong>Total Portfolio Value:</strong> $${metrics.totalPortfolioValue.toFixed(2)}</p>
+        <p><strong>Realised PnL:</strong> $${metrics.realisedPnL.toFixed(2)}</p>
+        <p><strong>Unrealised PnL:</strong> $${metrics.unrealisedPnL.toFixed(2)}</p>
+        <p><strong>Total Return:</strong> ${metrics.totalReturnPercent.toFixed(2)}%</p>
     `;
 }
 
@@ -154,10 +163,15 @@ function renderPortfolioSummary(quotes) {
  * =========================================
  * Displays each stock owned:
  * - quantity
- * - average price
+ * - average cost
  * - current price
  * - market value
- * - unrealised PnL
+ * - unrealised profit/loss
+ *
+ * Behaviour:
+ * - Uses holding performance data derived by the portfolio module
+ * - Avoids recalculating financial metrics in the UI layer
+ * - Preserves quote reliability states when market data is stale or unavailable
  */
 function renderHoldings(quotes) {
     const holdingsContainer = document.getElementById("holdings");
@@ -178,24 +192,45 @@ function renderHoldings(quotes) {
     }
 
     for (const symbol of symbols) {
-        const holding = portfolio.holdings[symbol];
-        const currentPrice = quotes[symbol]?.price || 0;
-        const marketValue = holding.quantity * currentPrice;
-        const unrealisedPnL = (currentPrice - holding.avgPrice) * holding.quantity;
+        const performance = getHoldingPerformance(symbol, quotes[symbol]);
 
         const holdingCard = document.createElement("div");
         holdingCard.className = "holding-card";
 
+        const priceText = performance.currentPrice !== null
+            ? `$${performance.currentPrice.toFixed(2)}`
+            : "Unavailable";
+
+        const marketValueText = performance.marketValue !== null
+            ? `$${performance.marketValue.toFixed(2)}`
+            : "Unavailable";
+
+        const pnlText = performance.unrealisedPnL !== null
+            ? `$${performance.unrealisedPnL.toFixed(2)}`
+            : "Unavailable";
+
+        const pnlClass = performance.unrealisedPnL !== null
+            ? (performance.unrealisedPnL < 0 ? "negative" : "positive")
+            : "";
+
         holdingCard.innerHTML = `
             <p><strong>${symbol}</strong></p>
-            <p>Quantity: ${holding.quantity}</p>
-            <p>Average Cost: $${holding.avgPrice.toFixed(2)}</p>
-            <p>Current Price: $${currentPrice.toFixed(2)}</p>
-            <p>Market Value: $${marketValue.toFixed(2)}</p>
-            <p class="holding-pnl ${unrealisedPnL < 0 ? "negative" : "positive"}">
-                Unrealised PnL: $${unrealisedPnL.toFixed(2)}
+            <p>Quantity: ${performance.quantity}</p>
+            <p>Average Cost: $${performance.averageCost.toFixed(2)}</p>
+            <p>Current Price: ${priceText}</p>
+            <p>Market Value: ${marketValueText}</p>
+            <p class="holding-pnl ${pnlClass}">
+                Unrealised PnL: ${pnlText}
             </p>
         `;
+
+        if (performance.isStale) {
+            holdingCard.classList.add("stale-quote");
+        }
+
+        if (!performance.isValid) {
+            holdingCard.classList.add("invalid-quote");
+        }
 
         holdingsContainer.appendChild(holdingCard);
     }
