@@ -137,6 +137,7 @@ function sellStock(symbol, price) {
  * - holdings value and cost basis
  * - realised and unrealised profit/loss
  * - total portfolio value and return
+ * - near-zero normalisation for stable financial output
  *
  * Design Note:
  * Market-dependent values are derived on demand from
@@ -147,6 +148,24 @@ function sellStock(symbol, price) {
  * valuation data, while ensuring that the UI and analytics
  * layers consume a single consistent accounting model.
  */
+
+/**
+ * Normalises very small numeric values to zero so the system
+ * does not display misleading values such as -0.00 caused by
+ * floating-point precision or tiny market movements.
+ *
+ * Behaviour:
+ * - Returns 0 when the absolute value is smaller than the threshold
+ * - Otherwise returns the original value unchanged
+ *
+ * Design Note:
+ * This keeps portfolio summaries and analytics aligned by
+ * removing insignificant near-zero noise at the accounting layer
+ * rather than handling it separately in the UI.
+ */
+function normaliseNearZero(value, threshold = 0.005) {
+    return Math.abs(value) < threshold ? 0 : value;
+}
 
 /**
  * Computes derived accounting metrics for a single holding.
@@ -166,6 +185,8 @@ function sellStock(symbol, price) {
  * - Treats live and stale quotes as usable valuation inputs
  * - Avoids producing misleading market-based metrics
  *   when quote data is unavailable or invalid
+ * - Normalises insignificant near-zero valuation values to avoid
+ *   misleading outputs such as -0.00
  *
  * Design Note:
  * This function derives live valuation data from durable
@@ -201,9 +222,9 @@ function getHoldingPerformance(symbol, quote) {
 
     const currentPrice = quote.price;
     const marketValue = quantity * currentPrice;
-    const unrealisedPnL = marketValue - costBasis;
+    const unrealisedPnL = normaliseNearZero(marketValue - costBasis);
     const unrealisedPnLPercent = costBasis > 0
-        ? (unrealisedPnL / costBasis) * 100
+        ? normaliseNearZero((unrealisedPnL / costBasis) * 100)
         : 0;
 
     return {
@@ -239,6 +260,8 @@ function getHoldingPerformance(symbol, quote) {
  *   market-dependent valuation totals
  * - Preserves realised profit/loss independently from
  *   live market fluctuations
+ * - Normalises insignificant near-zero values so portfolio
+ *   summaries and insights remain visually and semantically consistent
  *
  * Design Note:
  * This function acts as the main portfolio summary calculator,
@@ -262,18 +285,18 @@ function getPortfolioMetrics(quotes) {
     }
 
     const totalPortfolioValue = portfolio.cash + holdingsValue;
-    const totalReturn = portfolio.realisedPnL + totalUnrealisedPnL;
+    const totalReturn = normaliseNearZero(portfolio.realisedPnL + totalUnrealisedPnL);
 
     const totalReturnPercent = totalCostBasis > 0
-        ? (totalReturn / totalCostBasis) * 100
+        ? normaliseNearZero((totalReturn / totalCostBasis) * 100)
         : 0;
 
     return {
         cash: portfolio.cash,
-        holdingsValue,
-        totalPortfolioValue,
-        realisedPnL: portfolio.realisedPnL,
-        unrealisedPnL: totalUnrealisedPnL,
+        holdingsValue: normaliseNearZero(holdingsValue),
+        totalPortfolioValue: normaliseNearZero(totalPortfolioValue),
+        realisedPnL: normaliseNearZero(portfolio.realisedPnL),
+        unrealisedPnL: normaliseNearZero(totalUnrealisedPnL),
         totalReturn,
         totalReturnPercent
     };
