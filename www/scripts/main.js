@@ -34,6 +34,9 @@
 let STOCK_UNIVERSE = [];
 let selectedSymbols = [];
 
+const MAX_ACTIVE_WATCHLIST_SIZE = 8;
+const DEFAULT_ACTIVE_WATCHLIST_SIZE = 8;
+
 
 /**
  * =========================================
@@ -204,12 +207,121 @@ async function loadStockUniverse() {
 
     STOCK_UNIVERSE = universe;
 
-    // Keep the active watchlist smaller than the full universe
-    // to reduce live quote load and keep the UI manageable.
-    selectedSymbols = STOCK_UNIVERSE.slice(0, 8).map(stock => stock.symbol);
+    selectedSymbols = STOCK_UNIVERSE
+        .slice(0, DEFAULT_ACTIVE_WATCHLIST_SIZE)
+        .map(stock => stock.symbol);
 
     console.log("Loaded stock universe:", STOCK_UNIVERSE.length);
     console.log("Selected symbols:", selectedSymbols);
+}
+
+
+/**
+ * Adds one stock to the active watchlist if possible.
+ *
+ * Rules:
+ * - symbol must exist in the generated universe
+ * - duplicates are ignored
+ * - active watchlist is capped for API safety and UI clarity
+ */
+function addSelectedStockToWatchlist(symbol) {
+    if (!symbol) {
+        return { success: false, message: "No stock selected" };
+    }
+
+    const existsInUniverse = STOCK_UNIVERSE.some(stock => stock.symbol === symbol);
+
+    if (!existsInUniverse) {
+        return { success: false, message: "Selected stock is not in the universe" };
+    }
+
+    if (selectedSymbols.includes(symbol)) {
+        return { success: false, message: "Stock is already in the watchlist" };
+    }
+
+    if (selectedSymbols.length >= MAX_ACTIVE_WATCHLIST_SIZE) {
+        return {
+            success: false,
+            message: `Watchlist can only contain ${MAX_ACTIVE_WATCHLIST_SIZE} stocks`
+        };
+    }
+
+    selectedSymbols.push(symbol);
+    return { success: true, message: `${symbol} added to watchlist` };
+}
+
+/**
+ * Removes one stock from the active watchlist.
+ *
+ * Rules:
+ * - symbol must exist in the active watchlist
+ * - at least one stock should remain
+ */
+function removeStockFromWatchlist(symbol) {
+    if (!selectedSymbols.includes(symbol)) {
+        return { success: false, message: "Stock is not in the watchlist" };
+    }
+
+    if (selectedSymbols.length <= 1) {
+        return { success: false, message: "Watchlist must keep at least one stock" };
+    }
+
+    selectedSymbols = selectedSymbols.filter(item => item !== symbol);
+
+    // Remove stale quote state for removed symbols so the
+    // shared quote cache matches the active watchlist.
+    delete latestQuotes[symbol];
+
+    return { success: true, message: `${symbol} removed from watchlist` };
+}
+
+/**
+ * Handles add-stock button clicks from the selector UI.
+ */
+async function handleAddStock() {
+    const selector = document.getElementById("stock-selector");
+
+    if (!selector) {
+        return;
+    }
+
+    const symbol = selector.value;
+    const result = addSelectedStockToWatchlist(symbol);
+
+    alert(result.message);
+
+    if (!result.success) {
+        return;
+    }
+
+    renderStockSelector();
+
+    const didRefreshSucceed = await loadMarket();
+
+    if (didRefreshSucceed) {
+        resetMarketAutoRefresh();
+    }
+}
+
+/**
+ * Handles removing one stock from the active watchlist.
+ */
+async function handleRemoveStock(symbol) {
+    const result = removeStockFromWatchlist(symbol);
+
+    alert(result.message);
+
+    if (!result.success) {
+        return;
+    }
+
+    renderStockSelector();
+
+    const didRefreshSucceed = await loadMarket();
+
+    if (didRefreshSucceed) {
+        resetMarketAutoRefresh();
+    }
 }
 
 
@@ -640,8 +752,9 @@ async function handleManualRefresh() {
  * initial market load.
  */
 async function initialiseApp() {
-    // Bind manual refresh button if it exists
+    // Bind manual reset button and add stock button
     document.getElementById("refresh-btn")?.addEventListener("click", handleManualRefresh);
+    document.getElementById("add-stock-btn")?.addEventListener("click", handleAddStock);
 
     /**
      * Updates the refresh button cooldown display every second
@@ -656,9 +769,8 @@ async function initialiseApp() {
     renderMarketStatus();
     updateRefreshButtonState();
 
-    // Load automated stock universe before the first
-    // market refresh so watchlist fetching has symbols to use
     await loadStockUniverse();
+    renderStockSelector();
 
     // Perform the first market load before starting
     // the automatic refresh cycle

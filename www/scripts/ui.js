@@ -21,6 +21,48 @@
 
 /**
  * =========================================
+ * STOCK SELECTOR RENDERING
+ * =========================================
+ * Renders the dropdown used to add stocks from the
+ * generated stock universe into the active watchlist.
+ *
+ * Behaviour:
+ * - excludes symbols already in the active watchlist
+ * - shows company name where available
+ * - keeps selector options aligned with shared state
+ */
+function renderStockSelector() {
+    const selector = document.getElementById("stock-selector");
+
+    if (!selector) {
+        return;
+    }
+
+    selector.innerHTML = "";
+
+    const availableStocks = STOCK_UNIVERSE.filter(stock => {
+        return !selectedSymbols.includes(stock.symbol);
+    });
+
+    if (availableStocks.length === 0) {
+        selector.innerHTML = `<option value="">No more stocks available</option>`;
+        selector.disabled = true;
+        return;
+    }
+
+    selector.disabled = false;
+
+    for (const stock of availableStocks) {
+        const option = document.createElement("option");
+        option.value = stock.symbol;
+        option.textContent = `${stock.symbol} — ${stock.companyName ?? stock.symbol}`;
+        selector.appendChild(option);
+    }
+}
+
+
+/**
+ * =========================================
  * WATCHLIST RENDERING
  * =========================================
  * Displays all stocks in the active market watchlist.
@@ -109,6 +151,7 @@ function renderWatchlist(quotes) {
 
         stockCard.innerHTML = `
             <h2 class="stock-symbol">${symbol}</h2>
+            <p class="stock-name">${stockMeta?.companyName ?? ""}</p>
             <p class="stock-meta"><strong>Exchange:</strong> ${exchange}</p>
             <p class="stock-meta"><strong>Region:</strong> ${region}</p>
             <p class="stock-meta"><strong>Sector:</strong> ${sector}</p>
@@ -121,6 +164,7 @@ function renderWatchlist(quotes) {
 
             <button class="buy-btn" onclick="handleBuy('${symbol}')">Buy</button>
             <button class="sell-btn" onclick="handleSell('${symbol}')">Sell</button>
+            <button class="remove-btn" onclick="handleRemoveStock('${symbol}')">Remove</button>
         `;
 
         const changeElement = stockCard.querySelector(".stock-change");
