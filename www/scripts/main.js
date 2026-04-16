@@ -144,19 +144,10 @@ function getStockMeta(symbol) {
 }
 
 /**
- * Extract unique exchanges from selected symbols
+ * Get US stocjs
  */
 function getSelectedExchanges() {
-    const exchanges = new Set();
-
-    for (const symbol of selectedSymbols) {
-        const meta = getStockMeta(symbol);
-        if (meta?.exchange) {
-            exchanges.add(meta.exchange);
-        }
-    }
-
-    return [...exchanges];
+    return ["US"];
 }
 
 /**

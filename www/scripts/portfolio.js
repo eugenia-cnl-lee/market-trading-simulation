@@ -280,6 +280,7 @@ function normaliseNearZero(value, threshold = 0.005) {
  * storing these values permanently in the holding itself.
  */
 function getHoldingPerformance(symbol, quote) {
+    const meta = getStockMeta(symbol);
     const holding = portfolio.holdings[symbol];
 
     if (!holding) {
@@ -291,6 +292,7 @@ function getHoldingPerformance(symbol, quote) {
 
     const hasUsableQuote = quote && (quote.isValid || quote.isStale);
 
+    // For invalid quote case
     if (!hasUsableQuote) {
         return {
             symbol,
@@ -302,10 +304,13 @@ function getHoldingPerformance(symbol, quote) {
             unrealisedPnL: null,
             unrealisedPnLPercent: null,
             isStale: false,
-            isValid: false
+            isValid: false,
+            sector: meta.sector,
+            style: meta.style,
         };
     }
 
+    // For normal qutoe case case
     const currentPrice = quote.price;
     const marketValue = quantity * currentPrice;
     const unrealisedPnL = normaliseNearZero(marketValue - costBasis);
@@ -323,7 +328,9 @@ function getHoldingPerformance(symbol, quote) {
         unrealisedPnL,
         unrealisedPnLPercent,
         isStale: quote.isStale,
-        isValid: quote.isValid
+        isValid: quote.isValid,
+        sector: meta.sector,
+        style: meta.style
     };
 }
 

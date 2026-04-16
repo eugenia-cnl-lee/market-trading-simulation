@@ -53,40 +53,46 @@ function isSimpleUsTicker(symbol) {
     return /^[A-Z]{1,5}$/.test(symbol);
 }
 
-/**
- * Lightweight sector assignment rules.
- *
- * This is intentionally simple for now.
- * Later you can replace this with real metadata from profile endpoints.
- */
-function inferSectorFromDescription(description = "") {
-    const text = description.toLowerCase();
 
-    if (text.includes("semiconductor")) return "Semiconductors";
-    if (text.includes("software")) return "Technology";
-    if (text.includes("bank")) return "Finance";
-    if (text.includes("energy") || text.includes("oil")) return "Energy";
-    if (text.includes("retail") || text.includes("consumer")) return "Consumer";
-    if (text.includes("biotech") || text.includes("pharmaceutical")) return "Healthcare";
-    if (text.includes("industrial")) return "Industrials";
+function getRegionFromCountry(country) {
+    if (country === "US" || country === "CA") {
+        return "North America";
+    }
 
-    return "Other";
+    if (!country) {
+        return "Unknown";
+    }
+
+    return country;
 }
 
-/**
- * Lightweight style tagging.
- */
-function inferStyle(symbol, description = "") {
-    const text = description.toLowerCase();
+function getMarketCapBucket(marketCap) {
+    if (!marketCap || marketCap <= 0) {
+        return "Unknown";
+    }
 
-    const highVolNames = ["NVDA", "TSLA", "AMD", "SMCI", "PLTR", "COIN", "MSTR", "RIVN"];
-    if (highVolNames.includes(symbol)) return "high-volatility";
+    if (marketCap >= 10000) {
+        return "Large Cap";
+    }
 
-    if (text.includes("bank") || text.includes("energy")) return "defensive";
-    if (text.includes("software") || text.includes("semiconductor")) return "growth";
+    if (marketCap >= 2000) {
+        return "Mid Cap";
+    }
 
-    return "core";
+    return "Small Cap";
 }
+
+async function fetchCompanyProfile(symbol) {
+    const apiUrl = `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${API_KEY}`;
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+        throw new Error(`Failed profile fetch for ${symbol}: HTTP ${response.status}`);
+    }
+
+    return await response.json();
+}
+
 
 /**
  * Builds an automated US-only stock universe using Finnhub symbol data.
@@ -96,19 +102,29 @@ function inferStyle(symbol, description = "") {
  * many provider calls or expose selection logic directly.
  */
 async function buildAutomatedStockUniverse(limit = 30) {
-    const apiUrl = `https://finnhub.io/api/v1/stock/symbol?exchange=US&token=${API_KEY}`;
-    console.log("Building stock universe from:", apiUrl);
+    // Fetch US stock lists from both NASDAQ and NYSE
+    const urls = [
+        `https://finnhub.io/api/v1/stock/symbol?exchange=US&mic=XNAS&token=${API_KEY}`,
+        `https://finnhub.io/api/v1/stock/symbol?exchange=US&mic=XNYS&token=${API_KEY}`
+    ];
 
-    const response = await fetch(apiUrl);
+    const symbolResponses = await Promise.all(urls.map(url => fetch(url)));
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch stock symbols: HTTP ${response.status}`);
+    for (const response of symbolResponses) {
+        if (!response.ok) {
+            throw new Error(`Failed to fetch stock symbols: HTTP ${response.status}`);
+        }
     }
 
-    const symbols = await response.json();
+    const symbolResults = await Promise.all(
+        symbolResponses.map(response => response.json())
+    );
 
-    console.log("Raw US symbols received:", symbols.length);
+    const symbols = symbolResults.flat();
 
+    console.log("Combined US symbols (NASDAQ + NYSE):", symbols.length);
+    
+    // Filter and shortlist
     const filtered = symbols.filter(item => {
         return (
             item &&
@@ -116,73 +132,58 @@ async function buildAutomatedStockUniverse(limit = 30) {
             typeof item.description === "string" &&
             item.type &&
             item.type.toLowerCase().includes("stock") &&
-            isSimpleUsTicker(item.symbol)
+            isSimpleUsTicker(item.symbol) &&
+            item.symbol.length <= 4 && // remove weird 5-letter OTC
+            !item.symbol.endsWith("F") && // remove OTC foreign shares
+            !item.symbol.endsWith("Y") // remove ADR weird shares
         );
     });
 
     console.log("Filtered common-stock candidates:", filtered.length);
 
-    /**
-     * Prefer a mixture of recognisable and more active names.
-     * This still remains automated because the candidate pool
-     * comes from the API and the final selection uses rules.
-     */
-    const prioritySymbols = new Set([
-        "AAPL", "MSFT", "NVDA", "TSLA", "AMD", "META", "AMZN", "GOOGL",
-        "PLTR", "COIN", "SMCI", "MSTR", "NFLX", "UBER", "SHOP",
-        "JPM", "XOM", "CVX", "LLY", "JNJ", "BA", "CAT", "NKE", "DIS"
-    ]);
+    const shuffled = filtered.sort(() => 0.5 - Math.random());
 
-    const scored = filtered.map(item => {
-        let score = 0;
+    const shortlisted = shuffled.slice(0, limit);
 
-        if (prioritySymbols.has(item.symbol)) score += 100;
-        if (item.description.toLowerCase().includes("semiconductor")) score += 20;
-        if (item.description.toLowerCase().includes("technology")) score += 15;
-        if (item.description.toLowerCase().includes("software")) score += 15;
-        if (item.description.toLowerCase().includes("bank")) score += 10;
-        if (item.description.toLowerCase().includes("energy")) score += 10;
+    // Enrich shortlisted stocks
+    const enriched = await Promise.all(
+        shortlisted.map(async item => {
+            try {
+                const profileUrl = `https://finnhub.io/api/v1/stock/profile2?symbol=${item.symbol}&token=${API_KEY}`;
+                const profileResponse = await fetch(profileUrl);
 
-        return {
-            symbol: item.symbol,
-            exchange: "US",
-            region: "North America",
-            sector: inferSectorFromDescription(item.description),
-            style: inferStyle(item.symbol, item.description),
-            companyName: item.description,
-            score
-        };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-
-    const selected = [];
-    const sectorCounts = {};
-
-    for (const stock of scored) {
-        if (selected.length >= limit) break;
-
-        const sector = stock.sector;
-        const count = sectorCounts[sector] || 0;
-
-        /**
-         * Prevent one sector from dominating too heavily.
-         */
-        if (selected.length < limit) {
-            for (const stock of scored) {
-                if (selected.length >= limit) break;
-
-                if (!selected.includes(stock)) {
-                    selected.push(stock);
+                if (!profileResponse.ok) {
+                    throw new Error(`Failed profile fetch for ${item.symbol}: HTTP ${profileResponse.status}`);
                 }
+
+                const profile = await profileResponse.json();
+
+                return {
+                    symbol: item.symbol,
+                    companyName: profile.name || item.description,
+                    exchange: "US",
+                    region: "North America",
+                    sector: profile.finnhubIndustry || "Other",
+                    style: getMarketCapBucket(profile.marketCapitalization ?? null),
+                    marketCap: profile.marketCapitalization ?? null
+                };
+            } catch (error) {
+                console.error(`Profile enrichment failed for ${item.symbol}:`, error.message);
+
+                return {
+                    symbol: item.symbol,
+                    companyName: item.description,
+                    exchange: "US",
+                    region: "North America",
+                    sector: "Other",
+                    style: "Unknown",
+                    marketCap: null
+                };
             }
-        }
+        })
+    );
 
-        selected.push(stock);
-        sectorCounts[sector] = count + 1;
-    }
-
-    return selected;
+    return enriched.filter(Boolean).slice(0, limit);
 }
 
 // Logging for easy debugging
