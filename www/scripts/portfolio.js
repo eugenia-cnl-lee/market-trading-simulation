@@ -394,3 +394,63 @@ function getPortfolioMetrics(quotes) {
         totalReturnPercent
     };
 }
+
+
+/**
+ * =========================================
+ * PORTFOLIO ALLOCATION ANALYTICS
+ * =========================================
+ * Computes:
+ * - position weights
+ * - sector allocation
+ * - concentration metrics
+ */
+
+function getAllocationAnalytics(quotes) {
+    const positions = [];
+    let totalValue = portfolio.cash;
+
+    // First pass: compute values
+    for (const symbol in portfolio.holdings) {
+        const perf = getHoldingPerformance(symbol, quotes[symbol]);
+
+        if (!perf || perf.marketValue === null) continue;
+
+        positions.push(perf);
+        totalValue += perf.marketValue;
+    }
+
+    // Second pass: compute weights
+    const weightedPositions = positions.map(p => ({
+        ...p,
+        weight: totalValue > 0 ? (p.marketValue / totalValue) * 100 : 0
+    }));
+
+    // Sector allocation
+    const sectorAllocation = {};
+
+    for (const p of weightedPositions) {
+        const sector = p.sector || "Other";
+
+        if (!sectorAllocation[sector]) {
+            sectorAllocation[sector] = 0;
+        }
+
+        sectorAllocation[sector] += p.weight;
+    }
+
+    // Sort largest positions
+    const sorted = [...weightedPositions].sort((a, b) => b.weight - a.weight);
+
+    const largest = sorted[0]?.weight || 0;
+    const top3 = sorted.slice(0, 3).reduce((sum, p) => sum + p.weight, 0);
+
+    return {
+        positions: sorted,
+        sectorAllocation,
+        concentration: {
+            largestPosition: largest,
+            top3Total: top3
+        }
+    };
+}

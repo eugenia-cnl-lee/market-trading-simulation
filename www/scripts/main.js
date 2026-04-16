@@ -471,7 +471,8 @@ async function loadMarket() {
         // Multi-exchange session fetch
         await loadMarketSessions();
 
-        const insights = generateInsights(latestQuotes);
+        const allocation = getAllocationAnalytics(latestQuotes);
+        const { insights, analysisData } = generateInsights(latestQuotes);
 
         if (marketResult.allSucceeded) {
             lastUpdatedTime = new Date();
@@ -543,7 +544,7 @@ function handleBuy(symbol) {
 
     if (!result.success) return;
 
-    const insights = generateInsights(latestQuotes);
+    const { insights, analysisData } = generateInsights(latestQuotes);
 
     renderPortfolioSummary(latestQuotes);
     renderHoldings(latestQuotes);
@@ -570,7 +571,7 @@ function handleSell(symbol) {
 
     if (!result.success) return;
 
-    const insights = generateInsights(latestQuotes);
+    const { insights, analysisData } = generateInsights(latestQuotes);
 
     renderPortfolioSummary(latestQuotes);
     renderHoldings(latestQuotes);
