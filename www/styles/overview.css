@@ -1,0 +1,540 @@
+/**
+ * main.css
+ *
+ * Central stylesheet for the trading simulation dashboard.
+ *
+ * Owns:
+ * - Visual layout and spacing
+ * - Typography and component styling
+ * - Financial UI cues (e.g. gain/loss colours)
+ *
+ * Does not own:
+ * - Application logic
+ * - Data processing
+ * - Behavioural state
+ *
+ * Design Note:
+ * Styling is separated to maintain a clear distinction between
+ * presentation and application logic, improving maintainability.
+ */
+
+ 
+/**
+ * =========================================
+ * GLOBAL PAGE STYLING
+ * =========================================
+ * Sets base layout, typography, and background.
+ */
+body {
+    margin: 0;
+    padding: 32px;
+    font-family: 'Times New Roman', Times, serif;
+    background-color: #f4f6f8;
+    color: #1f2933;
+}
+
+
+/**
+ * =========================================
+ * HEADINGS AND TEXT
+ * =========================================
+ * Establishes visual hierarchy for titles.
+ */
+h1 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 2rem;
+}
+
+h2 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.4rem;
+}
+
+h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+p {
+    margin: 6px 0;
+    line-height: 1.5;
+}
+
+
+/**
+ * =========================================
+ * DASHBOARD LAYOUT
+ * =========================================
+ * Creates a two-column layout:
+ * Wider left panel for market and insights
+ * Narrower right panel for portfolio data
+ */
+.dashboard {
+    display: grid;
+    grid-template-columns: 7fr 3fr;
+    gap: 24px;
+    align-items: start;
+}
+
+
+/**
+ * =========================================
+ * SECTION CONTAINERS
+ * =========================================
+ * Wraps market and portfolio into card-like panels.
+ */
+.market-section,
+.portfolio-section {
+    background-color: #ffffff;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+
+/**
+ * =========================================
+ * WATCHLIST GRID
+ * =========================================
+ * Displays stock cards in a responsive grid layout.
+ */
+#watchlist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+
+/**
+ * =========================================
+ * CARD COMPONENTS
+ * =========================================
+ * Reusable styling for:
+ * - stock cards
+ * - holdings
+ * - transactions
+ */
+.stock-card,
+.holding-card,
+.transaction-card {
+    background-color: #fafafa;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+
+/**
+ * =========================================
+ * STOCK CARD DETAILS
+ * =========================================
+ */
+.stock-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stock-symbol {
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
+}
+
+.stock-price,
+.stock-change {
+    font-size: 0.95rem;
+}
+
+
+/**
+ * =========================================
+ * QUOTE STATE VISUAL INDICATORS
+ * =========================================
+ * Provides visual differentiation for:
+ * - stale quotes (fallback data)
+ * - invalid/unavailable quotes
+ *
+ * These styles communicate data reliability
+ * without affecting application logic.
+ */
+.stale-quote {
+    opacity: 0.85;
+    border: 2px dashed orange;
+}
+
+.invalid-quote {
+    opacity: 0.85;
+    border: 2px dashed grey;
+}
+
+
+/**
+ * =========================================
+ * BUTTON STYLING
+ * =========================================
+ * Styles buy/sell/refresh buttons with hover feedback.
+ */
+.buy-btn,
+.sell-btn,
+#refresh-btn {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.buy-btn:hover,
+.sell-btn:hover,
+#refresh-btn:hover {
+    transform: translateY(-1px);
+}
+
+.buy-btn {
+    background-color: #d1fae5;
+    color: #065f46;
+    margin-right: 8px;
+}
+
+.sell-btn {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+#refresh-btn {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    margin-top: 4px;
+}
+
+
+/**
+ * =========================================
+ * CONDITIONAL COLOUR INDICATORS
+ * =========================================
+ * Used for:
+ * - price change
+ * - PnL display
+ */
+.positive {
+    color: #15803d;
+    font-weight: 600;
+}
+
+.negative {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+
+/**
+ * =========================================
+ * MARKET HEADER
+ * =========================================
+ * Aligns the market title and refresh control
+ * on a single row while allowing wrap on
+ * narrower or zoomed-in screens.
+ */
+.market-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.market-header-row h2 {
+    margin-bottom: 0;
+}
+
+
+/**
+ * =========================================
+ * MARKET STATUS BAR
+ * =========================================
+ * Displays live update information:
+ * - auto-refresh interval
+ * - last updated time
+ * - loading / error states
+ */
+
+.market-status {
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background-color: #f5f7fb;
+    font-size: 0.95rem;
+    color: #5f6b7a;
+}
+
+
+/* =========================================
+   MARKET INFO CARD
+   =========================================
+   Styles for the market session indicator
+   and market refresh status container.
+
+   Purpose:
+   - Groups system state (refresh status)
+     and real-world market state (session)
+   - Provides visual clarity for market behaviour
+   - Prevents confusion when prices do not change
+
+   Design Note:
+   This section creates a unified card component
+   for all market-related status indicators,
+   ensuring consistency with the rest of the UI.
+*/
+.market-info-card {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+
+    border: 1px solid #e0e0e0;
+
+    /* subtle elevation to match card UI */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Market session text */
+#market-session {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: #282828;
+}
+
+/* Small explanatory note under session label */
+.market-session-note {
+    font-size: 0.8rem;
+    color: #424242;
+}
+
+
+/**
+* =========================================
+* MARKET SESSION TEXT STYLING
+* =========================================
+*/   
+
+.market-session-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* Open → green */
+.session-open {
+    color: #2e7d32;
+}
+
+/* Pre/Post → amber */
+.session-pre,
+.session-post {
+    color: #a15c00;
+}
+
+/* Closed → grey */
+.session-closed {
+    color: #777;
+}
+
+
+/**
+ * =========================================
+ * PORTFOLIO SUMMARY BOX
+ * =========================================
+ * Highlights key metrics (cash, value, etc.)
+ */
+#portfolio-summary {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+
+/**
+ * =========================================
+ * LIST CONTAINERS
+ * =========================================
+ * Used for holdings and transactions sections.
+ */
+#holdings,
+#transactions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.portfolio-section h3 {
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+
+/**
+ * =========================================
+ * RESPONSIVE DESIGN
+ * =========================================
+ * Adjusts layout for narrower screens by:
+ * - collapsing the insights grid into one column
+ * - collapsing the main dashboard into one column
+ * - adjusting the insight summary layout to prevent overflow
+ *
+ * Uses separate breakpoints for:
+ * - insights layout (content-driven)
+ * - dashboard layout (structure-driven)
+ */
+@media (max-width: 1400px) {
+    #insights {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1000px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-link {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+
+/**
+ * =========================================
+ * INSIGHTS SECTION
+ * =========================================
+ * Displays insight cards in a responsive grid:
+ * - 2 columns on larger screens
+ * - 1 column on smaller screens
+ * Improves visibility and reduces vertical scrolling.
+ */
+#insights {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+}
+
+.section-subtext {
+    margin-top: -6px;
+    margin-bottom: 16px;
+    color: #52606d;
+    font-size: 0.95rem;
+}
+
+.insight-card {
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 6px solid transparent;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.insight-label {
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 1rem;
+}
+
+.insight-message {
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Warning insight */
+.insight-warning {
+    background-color: #fef2f2;
+    border-left-color: #dc2626;
+}
+
+.insight-warning .insight-label {
+    color: #991b1b;
+}
+
+/* Informational insight */
+.insight-info {
+    background-color: #eff6ff;
+    border-left-color: #2563eb;
+}
+
+.insight-info .insight-label {
+    color: #1d4ed8;
+}
+
+/* Positive insight */
+.insight-positive {
+    background-color: #ecfdf5;
+    border-left-color: #16a34a;
+}
+
+.insight-positive .insight-label {
+    color: #15803d;
+}
+
+
+/**
+ * =========================================
+ * INSIGHT SUMMARY BAR
+ * =========================================
+ * Displays a top-level summary of insight counts,
+ * including warning, positive, and informational signals.
+ *
+ * Positioned below the main title to ensure visibility
+ * without requiring scrolling.
+ *
+ * Designed to:
+ * - highlight critical warnings immediately
+ * - provide a quick overview of portfolio signals
+ * - allow navigation to the full insights section
+ */
+#insight-summary {
+    margin-bottom: 20px;
+}
+
+.insight-summary-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 16px;
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+}
+
+.summary-warning {
+    color: #991b1b;
+    font-weight: 700;
+}
+
+.summary-positive {
+    color: #15803d;
+    font-weight: 700;
+}
+
+.summary-info {
+    color: #1d4ed8;
+    font-weight: 700;
+}
+
+.summary-link {
+    margin-left: auto; /* pushes link to right on wider screens */
+    color: #1d4ed8;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.summary-link:hover {
+    text-decoration: underline;
+}

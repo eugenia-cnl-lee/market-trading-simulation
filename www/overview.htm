@@ -1,0 +1,95 @@
+<!--
+  index.htm
+
+  Main HTML structure for the trading simulation dashboard.
+
+  Owns:
+  - Layout and structural containers for the application
+  - Sections for market data, portfolio, trading, and analytics
+  - Script and stylesheet loading
+
+  Does not own:
+  - Business logic
+  - Data fetching
+  - Dynamic UI behaviour
+
+  Design Note:
+  This file is intentionally kept declarative to ensure that
+  application behaviour is fully controlled by JavaScript modules.
+-->
+
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Paper Trading Platform</title>
+        <link rel="stylesheet" href="styles/overview.css">
+    </head>
+    <body>
+        <h1>Market Simulation and Trading &  Portfolio Analytics Platform</h1>
+
+        <div id="insight-summary"></div>
+
+        <div class="dashboard">
+            <section class="market-section">
+                <div class="market-header-row">
+                    <h2>Market Watchlist</h2>
+                    <button id="refresh-btn">Refresh Now</button>
+                </div>
+
+                <div id="market-status" class="market-status"></div>
+
+                <div class="market-info-card">
+                    <div id="market-session">
+                        <strong>Market Session:</strong>
+                        <span class="session-badge closed">Closed</span>
+                        <br>
+                        <span class="market-session-note">
+                            Prices may remain unchanged outside regular trading hours.
+                        </span>
+                    </div>
+                </div>
+
+                <div class="market-controls-card">
+                    <h3>Market Universe</h3>
+                    <p class="section-subtext">
+                        Choose which stocks from the generated universe appear in the active watchlist.
+                    </p>
+
+                    <div class="stock-selector-controls">
+                        <select id="stock-selector"></select>
+                        <button id="add-stock-btn" type="button">Add Stock</button>
+                    </div>
+                </div>
+
+                <div id="watchlist"></div>
+
+                <h3 id="insights-section">Portfolio Insights</h3>
+                <p class="section-subtext">Decision-support signals based on your current positions and trading behaviour.</p>
+                <div id="insights"></div>
+            </section>
+
+            <section class="portfolio-section">
+                <h2>Portfolio</h2>
+
+                <div id="portfolio-summary"></div>
+
+                <h3>Holdings</h3>
+                <div id="holdings"></div>
+
+                <h3>Transaction History</h3>
+                <p class="section-subtext">Recent trades in reverse chronological order</p>
+                <div id="transactions"></div>
+            </section>
+        </div>
+
+        <!-- Load all the scripts in order -->
+        <script src="scripts/marketData.js"></script>
+        <script src="scripts/portfolio.js"></script>
+        <script src="scripts/analytics.js"></script>
+        <script src="scripts/ui.js"></script>
+        <script src="scripts/main.js"></script>
+    </body>
+</html>

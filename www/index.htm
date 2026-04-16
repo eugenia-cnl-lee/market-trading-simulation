@@ -1,95 +1,139 @@
-<!--
-  index.htm
-
-  Main HTML structure for the trading simulation dashboard.
-
-  Owns:
-  - Layout and structural containers for the application
-  - Sections for market data, portfolio, trading, and analytics
-  - Script and stylesheet loading
-
-  Does not own:
-  - Business logic
-  - Data fetching
-  - Dynamic UI behaviour
-
-  Design Note:
-  This file is intentionally kept declarative to ensure that
-  application behaviour is fully controlled by JavaScript modules.
--->
-
-
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Paper Trading Platform</title>
-        <link rel="stylesheet" href="styles/main.css">
-    </head>
-    <body>
-        <h1>Market Simulation and Trading &  Portfolio Analytics Platform</h1>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>choose your trade</title>
+    <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+    <div class="opening-screen">
+        <p class="hint">
+            <span id="hint-text"></span><span class="cursor">_</span>
+        </p>
 
-        <div id="insight-summary"></div>
+        <h1 class="title">
+            <span id="title-text"></span><span class="cursor">_</span>
+        </h1>
 
-        <div class="dashboard">
-            <section class="market-section">
-                <div class="market-header-row">
-                    <h2>Market Watchlist</h2>
-                    <button id="refresh-btn">Refresh Now</button>
-                </div>
+        <div class="pill-stage">
+            <div class="pill-row">
+                <button class="pill-btn pill-red" id="red-pill">
+                    <span class="pill-label">choose</span>
+                </button>
 
-                <div id="market-status" class="market-status"></div>
+                <button class="pill-btn pill-blue" id="blue-pill">
+                    <span class="pill-label">me</span>
+                </button>
+            </div>
 
-                <div class="market-info-card">
-                    <div id="market-session">
-                        <strong>Market Session:</strong>
-                        <span class="session-badge closed">Closed</span>
-                        <br>
-                        <span class="market-session-note">
-                            Prices may remain unchanged outside regular trading hours.
-                        </span>
-                    </div>
-                </div>
+            <div class="hand-wrap">
+                <svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path
+                        d="M136 389
+                           C156 354, 198 331, 240 322
+                           C276 314, 321 309, 370 309
+                           C414 309, 461 314, 516 324
+                           C571 334, 630 355, 685 390
+                           C729 418, 762 419, 784 397
+                           C800 381, 805 356, 792 336
+                           C774 308, 738 301, 692 289
+                           C646 278, 614 262, 594 243
+                           C574 224, 560 201, 552 179
+                           C543 156, 531 124, 514 101
+                           C499 81, 476 69, 451 72
+                           C423 75, 406 99, 404 132
+                           L401 184
+                           C400 197, 387 203, 378 194
+                           C363 179, 357 158, 354 121
+                           C352 94, 343 69, 326 53
+                           C310 38, 285 32, 263 40
+                           C239 49, 226 71, 226 98
+                           L226 215
+                           C226 228, 213 234, 204 224
+                           C191 209, 186 187, 186 151
+                           C186 124, 177 101, 159 90
+                           C139 78, 117 77, 98 87
+                           C75 100, 65 126, 65 154
+                           C65 214, 78 260, 101 304
+                           C119 338, 129 365, 136 389Z"
+                        fill="#060606"
+                        stroke="#191919"
+                        stroke-width="6"
+                    />
 
-                <div class="market-controls-card">
-                    <h3>Market Universe</h3>
-                    <p class="section-subtext">
-                        Choose which stocks from the generated universe appear in the active watchlist.
-                    </p>
-
-                    <div class="stock-selector-controls">
-                        <select id="stock-selector"></select>
-                        <button id="add-stock-btn" type="button">Add Stock</button>
-                    </div>
-                </div>
-
-                <div id="watchlist"></div>
-
-                <h3 id="insights-section">Portfolio Insights</h3>
-                <p class="section-subtext">Decision-support signals based on your current positions and trading behaviour.</p>
-                <div id="insights"></div>
-            </section>
-
-            <section class="portfolio-section">
-                <h2>Portfolio</h2>
-
-                <div id="portfolio-summary"></div>
-
-                <h3>Holdings</h3>
-                <div id="holdings"></div>
-
-                <h3>Transaction History</h3>
-                <p class="section-subtext">Recent trades in reverse chronological order</p>
-                <div id="transactions"></div>
-            </section>
+                    <ellipse cx="312" cy="176" rx="62" ry="38" fill="rgba(255,0,0,0.10)" />
+                    <ellipse cx="585" cy="176" rx="62" ry="38" fill="rgba(0,95,255,0.10)" />
+                </svg>
+            </div>
         </div>
 
-        <!-- Load all the scripts in order -->
-        <script src="scripts/marketData.js"></script>
-        <script src="scripts/portfolio.js"></script>
-        <script src="scripts/analytics.js"></script>
-        <script src="scripts/ui.js"></script>
-        <script src="scripts/main.js"></script>
-    </body>
+        <p class="subtitle">
+            <span id="subtitle-text"></span><span class="cursor">_</span>
+        </p>
+    </div>
+
+    <div class="screen-flash" id="screen-flash"></div>
+
+    <audio id="bg-music" autoplay loop preload="auto">
+        <source src="resources/opening-theme.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const bgMusic = document.getElementById("bg-music");
+        const flash = document.getElementById("screen-flash");
+        const redPill = document.getElementById("red-pill");
+        const bluePill = document.getElementById("blue-pill");
+
+        async function tryAutoplayMusic() {
+            bgMusic.volume = 0.35;
+            try {
+                await bgMusic.play();
+            } catch (error) {
+                console.log("autoplay blocked by browser:", error);
+            }
+        }
+
+        function typeText(elementId, text, speed = 60, delay = 0) {
+            const el = document.getElementById(elementId);
+            let index = 0;
+
+            setTimeout(() => {
+                const timer = setInterval(() => {
+                    el.textContent += text[index];
+                    index += 1;
+
+                    if (index >= text.length) {
+                        clearInterval(timer);
+                    }
+                }, speed);
+            }, delay);
+        }
+
+        function choosePill(type) {
+            flash.classList.add("active");
+
+            setTimeout(() => {
+                if (type === "red") {
+                    alert("red pill selected");
+                    window.location.href = "overview.htm";
+                } else {
+                    alert("blue pill selected");
+                    window.location.href = "analytics.htm";
+                }
+            }, 420);
+        }
+
+        window.addEventListener("load", () => {
+            tryAutoplayMusic();
+
+            typeText("hint-text", "initialising choice architecture", 34, 200);
+            typeText("title-text", "choose your trade", 70, 900);
+            typeText("subtitle-text", "which one do you pick?", 48, 2300);
+        });
+
+        redPill.addEventListener("click", () => choosePill("red"));
+        bluePill.addEventListener("click", () => choosePill("blue"));
+    </script>
+</body>
 </html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>analytics</title>
+
+        <link rel="stylesheet" href="styles/main.css" />
+        <link rel="stylesheet" href="styles/analytics.css" />
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body class="analytics-page">
+        <header class="analytics-topbar">
+            <div class="analytics-topbar-left">
+                <p class="analytics-kicker">decision support</p>
+                <h1>analytics dashboard</h1>
+            </div>
+
+            <div class="analytics-topbar-right">
+                <a href="overview.htm" class="analytics-nav-btn">overview</a>
+                <a href="index.htm" class="analytics-nav-btn">opening</a>
+            </div>
+        </header>
+
+        <main class="analytics-shell">
+            <section class="analytics-hero-grid">
+                <article class="analytics-stat-card" data-panel="portfolio">
+                    <p class="stat-label">total portfolio value</p>
+                    <h2 id="stat-total-value">$0.00</h2>
+                    <p class="stat-sub" id="stat-total-return">return: 0.00%</p>
+                </article>
+
+                <article class="analytics-stat-card" data-panel="cash">
+                    <p class="stat-label">cash ratio</p>
+                    <h2 id="stat-cash-ratio">0%</h2>
+                    <p class="stat-sub" id="stat-cash-state">balanced</p>
+                </article>
+
+                <article class="analytics-stat-card" data-panel="concentration">
+                    <p class="stat-label">top position</p>
+                    <h2 id="stat-top1">0%</h2>
+                    <p class="stat-sub" id="stat-top3">top 3: 0%</p>
+                </article>
+
+                <article class="analytics-stat-card" data-panel="activity">
+                    <p class="stat-label">trading activity</p>
+                    <h2 id="stat-transactions">0</h2>
+                    <p class="stat-sub" id="stat-activity-level">none</p>
+                </article>
+            </section>
+
+            <section class="analytics-main-grid">
+                <section class="analytics-chart-panel">
+                    <div class="panel-header">
+                        <div>
+                            <p class="panel-kicker">interactive allocation explorer</p>
+                            <h2>portfolio structure</h2>
+                        </div>
+
+                        <div class="chart-mode-switch">
+                            <button class="chart-mode-btn active" data-mode="positions">positions</button>
+                            <button class="chart-mode-btn" data-mode="sector">sector</button>
+                            <button class="chart-mode-btn" data-mode="style">style</button>
+                        </div>
+                    </div>
+
+                    <div class="chart-stage">
+                        <div class="chart-wrap">
+                            <canvas id="allocation-chart"></canvas>
+                        </div>
+
+                        <aside class="chart-detail-card" id="chart-detail-card">
+                            <p class="detail-kicker">hover / click detail</p>
+                            <h3 id="detail-title">allocation details</h3>
+                            <p id="detail-description">
+                                hover over a slice or a stat card to inspect that metric.
+                            </p>
+                            <p id="detail-value" class="detail-value"></p>
+                        </aside>
+                    </div>
+                </section>
+
+                <aside class="analytics-sidebar">
+                    <section class="analytics-side-panel">
+                        <div class="panel-header small">
+                            <div>
+                                <p class="panel-kicker">ranked exposure</p>
+                                <h2>position leaderboard</h2>
+                            </div>
+                        </div>
+
+                        <div id="leaderboard-list" class="leaderboard-list"></div>
+                    </section>
+
+                    <section class="analytics-side-panel">
+                        <div class="panel-header small">
+                            <div>
+                                <p class="panel-kicker">system feedback</p>
+                                <h2>live signals</h2>
+                            </div>
+                        </div>
+
+                        <div id="analytics-insight-list" class="analytics-insight-list"></div>
+                    </section>
+                </aside>
+            </section>
+
+            <section class="analytics-bottom-grid">
+                <article class="analytics-hover-card" data-preview="performance">
+                    <p class="mini-label">performance state</p>
+                    <h3 id="perf-state">breakeven</h3>
+                    <p id="perf-pnl">unrealised: $0.00</p>
+                    <div class="mini-preview">
+                        <canvas id="performance-mini-chart"></canvas>
+                    </div>
+                </article>
+
+                <article class="analytics-hover-card" data-preview="reliability">
+                    <p class="mini-label">data reliability</p>
+                    <h3 id="reliability-state">stable</h3>
+                    <p id="reliability-detail">stale: 0, invalid: 0</p>
+                    <div class="mini-preview">
+                        <canvas id="reliability-mini-chart"></canvas>
+                    </div>
+                </article>
+
+                <article class="analytics-hover-card" data-preview="trading-pattern">
+                    <p class="mini-label">trading pattern</p>
+                    <h3 id="pattern-bias">balanced</h3>
+                    <p id="pattern-detail">buy: 0, sell: 0</p>
+                    <div class="mini-preview">
+                        <canvas id="pattern-mini-chart"></canvas>
+                    </div>
+                </article>
+            </section>
+        </main>
+
+        <script src="scripts/marketData.js"></script>
+        <script src="scripts/portfolio.js"></script>
+        <script src="scripts/analytics.js"></script>
+        <script src="scripts/analytics-page.js"></script>
+    </body>
+</html>
