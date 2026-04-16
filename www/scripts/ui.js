@@ -27,7 +27,7 @@
  * Each stock includes:
  * - price
  * - change
- * - buy/sell actions
+ * - buy/sell actions routed through the execution layer
  * - quote status (live, stale, unavailable)
  *
  * Behaviour:
@@ -92,8 +92,8 @@ function renderWatchlist(quotes) {
             <p class="stock-change">Change: ${changeText}</p>
             <p class="stock-state">Status: ${quoteStateText}</p>
 
-            <button class="buy-btn" onclick="handleBuy('${symbol}', ${data.price})" ${!data.isValid && !data.isStale ? "disabled" : ""}>Buy</button>
-            <button class="sell-btn" onclick="handleSell('${symbol}', ${data.price})" ${!data.isValid && !data.isStale ? "disabled" : ""}>Sell</button>
+            <button class="buy-btn" onclick="handleBuy('${symbol}')">Buy</button>
+            <button class="sell-btn" onclick="handleSell('${symbol}')">Sell</button>
         `;
 
         const changeElement = stockCard.querySelector(".stock-change");

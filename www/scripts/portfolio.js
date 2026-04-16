@@ -5,7 +5,7 @@
  *
  * Owns:
  * - Portfolio state (cash, holdings, transactions, realised PnL)
- * - Buy and sell operations
+ * - Buy and sell operations with execution validation
  * - Average cost and position tracking
  * - Holding-level accounting metrics
  * - Portfolio valuation and profit/loss calculations
@@ -42,24 +42,86 @@ const portfolio = {
 
 /**
  * =========================================
- * BUY STOCK LOGIC
+ * EXECUTION REALISM LAYER
  * =========================================
- * Handles purchasing 1 unit of a stock.
- * Updates:
- * - cash balance
- * - holdings (quantity + weighted average cost)
- * - transaction history
+ * Adds:
+ * - market session validation
+ * - quote validity / staleness checks
+ * - deterministic slippage
+ * - structured execution results
+ *
+ * Design Note:
+ * This layer sits between user actions and portfolio updates,
+ * ensuring trades reflect realistic constraints rather than
+ * idealised instant execution.
  */
-function buyStock(symbol, price) {
-    if (portfolio.cash < price) {
-        alert("Not enough cash");
-        return;
+
+const SLIPPAGE_RATE = 0.001; // 0.1%
+
+function validateTradeExecution(quote, marketSession) {
+    if (!quote) {
+        return { ok: false, reason: "No quote available" };
     }
 
-    // Deduct cash
-    portfolio.cash -= price;
+    if (!quote.isValid) {
+        return { ok: false, reason: "Invalid market data" };
+    }
 
-    // Initialise holding if not present
+    if (quote.isStale) {
+        return { ok: false, reason: "Quote is stale" };
+    }
+
+    if (!marketSession || marketSession.session !== "regular") {
+        return { ok: false, reason: "Market is not open" };
+    }
+
+    return { ok: true };
+}
+
+function calculateExecutionPrice(price, type) {
+    if (type === "BUY") {
+        return price * (1 + SLIPPAGE_RATE);
+    } else {
+        return price * (1 - SLIPPAGE_RATE);
+    }
+}
+
+
+/**
+ * =========================================
+ * BUY STOCK LOGIC
+ * =========================================
+ * Handles purchasing 1 unit of a stock through
+ * the execution realism layer.
+ *
+ * Updates:
+ * - validates quote reliability and market session
+ * - applies deterministic slippage
+ * - deducts cash using execution price
+ * - holdings (quantity + weighted average cost)
+ * - transaction history
+ *
+ * Design Note:
+ * Buy orders no longer execute directly at the
+ * displayed quote price. Instead, they pass through
+ * a lightweight execution layer so portfolio state
+ * reflects realistic trading constraints.
+ */
+function buyStock(symbol, quote, marketSession) {
+    const validation = validateTradeExecution(quote, marketSession);
+
+    if (!validation.ok) {
+        return { success: false, message: validation.reason };
+    }
+
+    const executionPrice = calculateExecutionPrice(quote.price, "BUY");
+
+    if (portfolio.cash < executionPrice) {
+        return { success: false, message: "Not enough cash" };
+    }
+
+    portfolio.cash -= executionPrice;
+
     if (!portfolio.holdings[symbol]) {
         portfolio.holdings[symbol] = {
             quantity: 0,
@@ -69,18 +131,23 @@ function buyStock(symbol, price) {
 
     const holding = portfolio.holdings[symbol];
 
-    // Recalculate weighted average cost
-    const totalCost = holding.averageCost * holding.quantity + price;
+    const totalCost = holding.averageCost * holding.quantity + executionPrice;
     holding.quantity += 1;
     holding.averageCost = totalCost / holding.quantity;
 
-    // Record transaction
     portfolio.transactions.push({
         type: "BUY",
-        symbol: symbol,
-        price: price,
+        symbol,
+        displayedPrice: quote.price,
+        executionPrice,
+        slippage: SLIPPAGE_RATE,
         time: new Date().toLocaleString()
     });
+
+    return {
+        success: true,
+        message: `Bought at $${executionPrice.toFixed(2)}`
+    };
 }
 
 
@@ -88,43 +155,62 @@ function buyStock(symbol, price) {
  * =========================================
  * SELL STOCK LOGIC
  * =========================================
- * Handles selling 1 unit of a stock.
+ * Handles selling 1 unit of a stock through
+ * the execution realism layer.
+ *
  * Updates:
- * - cash balance
+ * - validates quote reliability and market session
+ * - applies deterministic slippage
+ * - cash balance using execution price
  * - holdings
  * - realised profit/loss
  * - transaction history
+ *
+ * Design Note:
+ * Sell orders now execute using the effective
+ * execution price rather than the displayed quote,
+ * ensuring realised profit/loss reflects trading
+ * friction instead of idealised fills.
  */
-function sellStock(symbol, price) {
+function sellStock(symbol, quote, marketSession) {
     const holding = portfolio.holdings[symbol];
 
     if (!holding || holding.quantity === 0) {
-        alert("No shares to sell");
-        return;
+        return { success: false, message: "No shares to sell" };
     }
 
-    // Add cash from sale
-    portfolio.cash += price;
+    const validation = validateTradeExecution(quote, marketSession);
 
-    // Realise profit or loss against the holding's average cost
-    const realised = price - holding.averageCost;
+    if (!validation.ok) {
+        return { success: false, message: validation.reason };
+    }
+
+    const executionPrice = calculateExecutionPrice(quote.price, "SELL");
+
+    portfolio.cash += executionPrice;
+
+    const realised = executionPrice - holding.averageCost;
     portfolio.realisedPnL += realised;
 
-    // Reduce holding quantity
     holding.quantity -= 1;
 
-    // Record transaction
     portfolio.transactions.push({
         type: "SELL",
-        symbol: symbol,
-        price: price,
+        symbol,
+        displayedPrice: quote.price,
+        executionPrice,
+        slippage: SLIPPAGE_RATE,
         time: new Date().toLocaleString()
     });
 
-    // Remove stock if no shares left
     if (holding.quantity === 0) {
         delete portfolio.holdings[symbol];
     }
+
+    return {
+        success: true,
+        message: `Sold at $${executionPrice.toFixed(2)}`
+    };
 }
 
 

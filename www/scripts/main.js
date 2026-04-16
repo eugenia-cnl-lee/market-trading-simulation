@@ -6,7 +6,7 @@
  * Owns:
  * - Initialising application state
  * - Connecting market data, portfolio, analytics, and UI modules
- * - Managing update cycles and user interactions
+ * - Managing update cycles, user interactions, and trade execution flow
  * - Triggering re-renders after state changes
  *
  * Does not own:
@@ -322,19 +322,34 @@ async function loadMarket() {
  * Handles buy/sell actions and updates all
  * portfolio-related UI components.
  *
- * These handlers reuse the existing latestQuotes
- * cache instead of making another API request.
- * That keeps trades responsive and avoids
- * unnecessary additional market calls.
+ * Behaviour:
+ * - reads the latest processed quote from shared state
+ * - passes market session and quote data into the
+ *   portfolio execution layer
+ * - rerenders portfolio and insight sections only
+ *   after execution succeeds
+ *
+ * Design Note:
+ * These handlers coordinate trade attempts but do not
+ * own execution rules themselves. This keeps execution
+ * realism inside the portfolio module while allowing
+ * the main application flow to remain orchestration-focused.
  */
 
 /**
- * Buys 1 unit of the selected stock using the latest
- * displayed market price, then rerenders all portfolio
- * and insight sections.
+ * Attempts to buy 1 unit of the selected stock using
+ * the latest processed quote and current market session,
+ * then rerenders all portfolio and insight sections
+ * if execution succeeds.
  */
-function handleBuy(symbol, price) {
-    buyStock(symbol, price);
+function handleBuy(symbol) {
+    const quote = latestQuotes[symbol];
+
+    const result = buyStock(symbol, quote, latestMarketSession);
+
+    alert(result.message);
+
+    if (!result.success) return;
 
     const insights = generateInsights(latestQuotes);
 
@@ -346,12 +361,19 @@ function handleBuy(symbol, price) {
 }
 
 /**
- * Sells 1 unit of the selected stock using the latest
- * displayed market price, then rerenders all portfolio
- * and insight sections.
+ * Attempts to sell 1 unit of the selected stock using
+ * the latest processed quote and current market session,
+ * then rerenders all portfolio and insight sections
+ * if execution succeeds.
  */
-function handleSell(symbol, price) {
-    sellStock(symbol, price);
+function handleSell(symbol) {
+    const quote = latestQuotes[symbol];
+
+    const result = sellStock(symbol, quote, latestMarketSession);
+
+    alert(result.message);
+
+    if (!result.success) return;
 
     const insights = generateInsights(latestQuotes);
 
