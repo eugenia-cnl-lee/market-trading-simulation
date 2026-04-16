@@ -5,8 +5,9 @@
  *
  * Owns:
  * - Fetching live market data from the backend API
+ * - Fetching market session data from the backend API
  * - Normalising raw API responses into a consistent internal format
- * - Validating quote data before it enters the application
+ * - Validating market data before it enters the application
  * - Managing data reliability and fallback behaviour
  *
  * Does not own:
@@ -159,6 +160,98 @@ async function getQuote(symbol, previousQuote = null) {
         };
     }
 }
+
+
+/**
+ * =========================================
+ * MARKET SESSION DATA
+ * =========================================
+ * Fetches and normalises trading session state for a
+ * configured exchange, such as:
+ * - pre-market
+ * - regular
+ * - post-market
+ * - closed
+ *
+ * This is kept separate from quote fetching because
+ * market session describes real-world exchange conditions,
+ * not system refresh behaviour.
+ */
+
+/**
+ * Fetches raw market session data for a given exchange.
+ * This function only handles transport and response parsing.
+ */
+async function fetchRawMarketSession(exchange = "US") {
+    const response = await fetch(`/api/market-status?exchange=${exchange}`);
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status} while fetching market session for ${exchange}`);
+    }
+
+    const data = await response.json();
+    return data;
+}
+
+/**
+ * Converts raw market session data into the application's
+ * internal market session format.
+ *
+ * This prevents the rest of the app from depending directly
+ * on API field names or incomplete API responses.
+ */
+function normaliseMarketSession(rawSession) {
+    return {
+        exchange: typeof rawSession?.exchange === "string" ? rawSession.exchange : "US",
+        isOpen: rawSession?.isOpen === true,
+        session: rawSession?.session ?? null,
+        timezone: typeof rawSession?.timezone === "string" ? rawSession.timezone : null,
+        holiday: rawSession?.holiday ?? null,
+        fetchedAt: Date.now()
+    };
+}
+
+/**
+ * Checks whether a normalised market session object contains
+ * usable session information.
+ */
+function isValidMarketSession(sessionData) {
+    const validSessions = ["pre-market", "regular", "post-market", null];
+
+    return (
+        typeof sessionData.exchange === "string" &&
+        typeof sessionData.isOpen === "boolean" &&
+        validSessions.includes(sessionData.session) &&
+        (typeof sessionData.timezone === "string" || sessionData.timezone === null)
+    );
+}
+
+/**
+ * Fetches and normalises market session data safely.
+ *
+ * Behaviour:
+ * - Returns the current market session if valid session data is received
+ * - Returns null if the fetch fails or the session data is invalid
+ *
+ * This keeps market session awareness as optional supporting context
+ * rather than a hard dependency for quote loading.
+ */
+async function fetchMarketSession(exchange = "US") {
+    try {
+        const rawSession = await fetchRawMarketSession(exchange);
+        const sessionData = normaliseMarketSession(rawSession);
+
+        if (isValidMarketSession(sessionData)) {
+            return sessionData;
+        }
+
+        return null;
+    } catch (error) {
+        console.error(`Failed to fetch market session for ${exchange}:`, error);
+        return null;
+    }
+}
+
 
 /**
  * Fetches all watchlist quotes safely.

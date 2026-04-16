@@ -67,6 +67,19 @@ console.log("MANUAL_REFRESH_COOLDOWN_MS:", MANUAL_REFRESH_COOLDOWN_MS);
  * - watchlist rendering
  * - portfolio calculations
  * - insights generation
+ * 
+ * latestMarketSession:
+ * Stores the most recent market session data for the
+ * configured exchange.
+ *
+ * This is used to communicate whether the market is:
+ * - open
+ * - pre-market
+ * - post-market
+ * - closed
+ *
+ * Unlike marketStatusType, this reflects real-world
+ * exchange conditions rather than application refresh state.
  *
  * isLoadingMarket:
  * Prevents overlapping refresh cycles. If one market
@@ -98,6 +111,7 @@ console.log("MANUAL_REFRESH_COOLDOWN_MS:", MANUAL_REFRESH_COOLDOWN_MS);
  * - "error"    → no valid quotes could be retrieved
  */
 let latestQuotes = {};
+let latestMarketSession = null;
 let isLoadingMarket = false;
 let marketRefreshTimer = null;
 let lastManualRefreshTime = 0;
@@ -208,6 +222,7 @@ function stopMarketStatusTicker() {
  * Fetches and processes quote data for the current watchlist,
  * then updates all major parts of the interface:
  * - market watchlist
+ * - market session indicator
  * - portfolio summary
  * - holdings
  * - transaction history
@@ -238,6 +253,10 @@ function stopMarketStatusTicker() {
  * from UI rendering and portfolio logic, ensuring that invalid
  * or missing market data does not propagate into the rest of
  * the system.
+ *
+ * It also keeps real-world market session state separate from
+ * application refresh state so unchanged prices are not
+ * misinterpreted as system failure.
  */
 async function loadMarket() {
     if (isLoadingMarket) {
@@ -254,6 +273,15 @@ async function loadMarket() {
         const marketResult = await getQuotes(WATCHLIST, latestQuotes);
         latestQuotes = marketResult.quotes;
 
+        // Fetch market session separately so quote updates can still
+        // succeed even if session data is unavailable
+        try {
+            latestMarketSession = await fetchMarketSession("US");
+        } catch (error) {
+            console.error("Failed to fetch market session:", error);
+            latestMarketSession = null;
+        }
+
         const insights = generateInsights(latestQuotes);
 
         if (marketResult.allSucceeded) {
@@ -267,6 +295,7 @@ async function loadMarket() {
         }
 
         renderWatchlist(latestQuotes);
+        renderMarketSession(latestMarketSession);
         renderPortfolioSummary(latestQuotes);
         renderHoldings(latestQuotes);
         renderTransactions();

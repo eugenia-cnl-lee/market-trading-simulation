@@ -5,7 +5,7 @@
  *
  * Owns:
  * - Serving static frontend files from the www directory
- * - Exposing backend API routes (e.g. /api/quote)
+ * - Exposing backend API routes (e.g. /api/quote, /api/market-status)
  * - Handling communication with external data providers
  * - Providing a secure boundary for API keys
  *
@@ -60,6 +60,36 @@ Bun.serve({
                 console.error("Fetch error:", error);
 
                 return new Response(JSON.stringify({ error: "Failed to fetch from Finnhub" }), {
+                    status: 500,
+                    headers: { "Content-Type": "application/json" }
+                });
+            }
+        }
+
+        if (url.pathname === "/api/market-status") {
+            const exchange = url.searchParams.get("exchange") || "US";
+            console.log("Exchange received:", exchange);
+
+            const apiUrl = `https://finnhub.io/api/v1/stock/market-status?exchange=${exchange}&token=${API_KEY}`;
+            console.log("Calling Finnhub:", apiUrl);
+
+            try {
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error(`Finnhub returned HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("Finnhub market status response:", data);
+
+                return new Response(JSON.stringify(data), {
+                    headers: { "Content-Type": "application/json" }
+                });
+            } catch (error) {
+                console.error("Market status fetch error:", error);
+
+                return new Response(JSON.stringify({ error: "Failed to fetch market status from Finnhub" }), {
                     status: 500,
                     headers: { "Content-Type": "application/json" }
                 });

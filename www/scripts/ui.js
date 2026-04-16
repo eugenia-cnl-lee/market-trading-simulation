@@ -259,6 +259,10 @@ function renderHoldings(quotes) {
  * This function renders system state derived from the market
  * update pipeline, communicating data reliability without
  * modifying underlying application logic.
+ * 
+ * This function does not represent whether the exchange
+ * itself is open or closed. That is handled separately by
+ * the market session indicator.
  */
 function renderMarketStatus() {
     const statusElement = document.getElementById("market-status");
@@ -321,6 +325,67 @@ function renderMarketStatus() {
     // Idle state (before first successful load)
     statusElement.textContent =
         `Auto-updating every ${REFRESH_INTERVAL_MS / 1000} seconds.`;
+}
+
+
+/**
+ * =========================================
+ * MARKET SESSION RENDERING
+ * =========================================
+ * Displays the current trading session of the exchange:
+ * - Open (regular session)
+ * - Pre-Market
+ * - Post-Market
+ * - Closed
+ *
+ * Behaviour:
+ * - Renders real-world market session state separately
+ *   from system refresh status
+ * - Helps users interpret unchanged prices correctly
+ * - Falls back gracefully if session data is unavailable
+ *
+ * Design Note:
+ * This function communicates market conditions rather than
+ * application state, reducing ambiguity when prices remain
+ * static during non-trading hours.
+ */
+function renderMarketSession(sessionData) {
+    const sessionElement = document.getElementById("market-session");
+
+    if (!sessionElement) return;
+
+    if (!sessionData) {
+        sessionElement.textContent = "Market Session: Unavailable";
+        return;
+    }
+
+    let sessionLabel = "Closed";
+    let symbol = "◌";
+    let className = "session-closed";
+
+    if (sessionData.session === "regular") {
+        sessionLabel = "Open";
+        symbol = "●";
+        className = "session-open";
+    } else if (sessionData.session === "pre-market") {
+        sessionLabel = "Pre-Market";
+        symbol = "○";
+        className = "session-pre";
+    } else if (sessionData.session === "post-market") {
+        sessionLabel = "Post-Market";
+        symbol = "◐";
+        className = "session-post";
+    }
+
+    sessionElement.innerHTML = `
+        <span class="market-session-label ${className}">
+            ${symbol} ${sessionLabel}
+        </span>
+        <br>
+        <span class="market-session-note">
+            Prices may remain unchanged outside regular trading hours.
+        </span>
+    `;
 }
 
 
