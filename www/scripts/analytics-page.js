@@ -2,6 +2,7 @@ let analyticsStockUniverse = [];
 let analyticsSelectedSymbols = [];
 
 let analyticsAllocationChart = null;
+let capitalSplitChart = null;
 let performanceMiniChart = null;
 let reliabilityMiniChart = null;
 let patternMiniChart = null;
@@ -318,6 +319,153 @@ function renderAllocationChart() {
         `viewing portfolio by ${analyticsChartMode}. hover or click a slice to inspect it.`
     );
 }
+
+/* =========================================
+   CAPITAL SPLIT DATASET
+   =========================================
+   Computes the portfolio-level split between:
+   - cash held
+   - capital deployed into holdings
+*/
+function getCapitalSplitDataset() {
+    const metrics = getPortfolioMetrics(latestAnalyticsQuotes);
+    const totalValue = metrics.totalPortfolioValue || 0;
+
+    const invested = totalValue > 0
+        ? Number(((metrics.holdingsValue / totalValue) * 100).toFixed(2))
+        : 0;
+
+    const cash = totalValue > 0
+        ? Number(((portfolio.cash / totalValue) * 100).toFixed(2))
+        : 100;
+
+    return {
+        labels: ["cash", "invested"],
+        values: [cash, invested],
+        descriptions: [
+            `cash makes up ${cash.toFixed(2)}% of the portfolio.`,
+            `invested holdings make up ${invested.toFixed(2)}% of the portfolio.`
+        ]
+    };
+}
+
+/* =========================================
+   CAPITAL SPLIT CHART
+   =========================================
+   Renders a large doughnut chart showing how
+   much capital remains in cash versus invested.
+*/
+function renderCapitalSplitChart() {
+    const canvas = document.getElementById("capital-split-chart");
+
+    if (!canvas) {
+        return;
+    }
+
+    const dataset = getCapitalSplitDataset();
+
+    if (capitalSplitChart) {
+        capitalSplitChart.destroy();
+    }
+
+    capitalSplitChart = new Chart(canvas, {
+        type: "doughnut",
+        data: {
+            labels: dataset.labels,
+            datasets: [
+                {
+                    data: dataset.values,
+                    backgroundColor: ["#111111", "#f4f4f1"],
+                    borderColor: ["#3d5afe", "#ff355e"],
+                    hoverBackgroundColor: ["#3d5afe", "#ff355e"],
+                    hoverBorderColor: ["#3d5afe", "#ff355e"],
+                    borderWidth: 4,
+                    hoverBorderWidth: 6,
+                    hoverOffset: 22
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "60%",
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 700
+            },
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        color: "#0b0b0b",
+                        boxWidth: 16,
+                        padding: 18,
+                        font: {
+                            size: 13
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "#111111",
+                    titleColor: "#ffffff",
+                    bodyColor: "#ffffff",
+                    borderColor: "#3d5afe",
+                    borderWidth: 1,
+                    callbacks: {
+                        label(context) {
+                            return `${context.label}: ${context.raw}%`;
+                        }
+                    }
+                }
+            },
+            onHover(event, elements) {
+                canvas.style.cursor = elements.length ? "pointer" : "default";
+
+                if (!elements.length) {
+                    return;
+                }
+
+                const index = elements[0].index;
+
+                document.getElementById("capital-split-title").textContent =
+                    dataset.labels[index];
+
+                document.getElementById("capital-split-description").textContent =
+                    dataset.descriptions[index];
+
+                document.getElementById("capital-split-value").textContent =
+                    `${dataset.values[index]}%`;
+            },
+            onClick(event, elements) {
+                if (!elements.length) {
+                    return;
+                }
+
+                const index = elements[0].index;
+
+                document.getElementById("capital-split-title").textContent =
+                    `${dataset.labels[index]} selected`;
+
+                document.getElementById("capital-split-description").textContent =
+                    dataset.descriptions[index];
+
+                document.getElementById("capital-split-value").textContent =
+                    `${dataset.values[index]}%`;
+            }
+        }
+    });
+
+    document.getElementById("capital-split-title").textContent =
+        "capital split";
+
+    document.getElementById("capital-split-description").textContent =
+        "this chart shows how much of the portfolio remains in cash versus deployed into holdings.";
+
+    document.getElementById("capital-split-value").textContent =
+        `${dataset.values[0].toFixed(2)}% cash`;
+}
+
 
 function renderPortfolioSummary() {
     const metrics = getPortfolioMetrics(latestAnalyticsQuotes);
@@ -752,6 +900,7 @@ function bindStatCardHover() {
 function renderAnalyticsDashboard() {
     renderPortfolioSummary();
     renderAllocationChart();
+    renderCapitalSplitChart();
     renderPortfolioExposure();
     renderInsightsPanel();
     renderMiniCharts();

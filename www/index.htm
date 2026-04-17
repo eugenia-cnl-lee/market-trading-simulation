@@ -75,65 +75,20 @@
 
     <div class="screen-flash" id="screen-flash"></div>
 
+    <!-- =========================================
+     SYSTEM TRANSITION OVERLAY
+     =========================================
+     Displays a system-style transition message
+     before routing the user into the next interface.
+    -->
+    <div id="system-overlay" class="system-overlay hidden">
+        <div id="system-message" class="system-message">
+            initialising...
+        </div>
+    </div>
+
     <audio id="bg-music" autoplay loop preload="auto">
         <source src="resources/opening.mp3" type="audio/mpeg">
     </audio>
 
-    <script>
-        const bgMusic = document.getElementById("bg-music");
-        const flash = document.getElementById("screen-flash");
-        const redPill = document.getElementById("red-pill");
-        const bluePill = document.getElementById("blue-pill");
-
-        async function tryAutoplayMusic() {
-            bgMusic.volume = 0.35;
-            try {
-                await bgMusic.play();
-            } catch (error) {
-                console.log("autoplay blocked by browser:", error);
-            }
-        }
-
-        function typeText(elementId, text, speed = 60, delay = 0) {
-            const el = document.getElementById(elementId);
-            let index = 0;
-
-            setTimeout(() => {
-                const timer = setInterval(() => {
-                    el.textContent += text[index];
-                    index += 1;
-
-                    if (index >= text.length) {
-                        clearInterval(timer);
-                    }
-                }, speed);
-            }, delay);
-        }
-
-        function choosePill(type) {
-            flash.classList.add("active");
-
-            setTimeout(() => {
-                if (type === "red") {
-                    alert("red pill selected");
-                    window.location.href = "overview.htm";
-                } else {
-                    alert("blue pill selected");
-                    window.location.href = "analytics.htm";
-                }
-            }, 420);
-        }
-
-        window.addEventListener("load", () => {
-            tryAutoplayMusic();
-
-            typeText("hint-text", "initialising choice architecture", 34, 200);
-            typeText("title-text", "choose your position", 70, 900);
-            typeText("subtitle-text", "capital follows decision", 48, 2300);
-        });
-
-        redPill.addEventListener("click", () => choosePill("red"));
-        bluePill.addEventListener("click", () => choosePill("blue"));
-    </script>
-</body>
-</html>
+    <script src="scripts/opening.js"></script>

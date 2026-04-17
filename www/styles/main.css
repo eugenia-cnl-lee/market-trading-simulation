@@ -1,3 +1,9 @@
+/* =========================================
+   GLOBAL RESET + DESIGN TOKENS
+   =========================================
+   Normalises layout behaviour and defines
+   reusable colour variables for consistency.
+*/
 * {
     box-sizing: border-box;
     margin: 0;
@@ -14,13 +20,19 @@
     --blue-core: #124eb0;
 }
 
+/* =========================================
+   PAGE BASE
+   =========================================
+   Uses normal document flow so the opening
+   screen can scale and scroll naturally.
+*/
 html,
 body {
     min-height: 100%;
+    width: 100%;
 }
 
 body {
-    overflow: hidden;
     color: var(--text-main);
     text-transform: lowercase;
     font-family:
@@ -29,30 +41,42 @@ body {
         "Courier New",
         Consolas,
         monospace;
+    letter-spacing: 0.03em;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
     background:
         radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.025), transparent 22%),
         radial-gradient(circle at 30% 24%, rgba(255, 0, 0, 0.035), transparent 26%),
         radial-gradient(circle at 70% 24%, rgba(0, 85, 255, 0.035), transparent 26%),
         linear-gradient(to bottom, #000000 0%, #010101 24%, #030303 55%, #000000 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    letter-spacing: 0.03em;
 }
 
+/* =========================================
+   OPENING SCREEN LAYOUT
+   =========================================
+   Keeps the interface centred visually while
+   still allowing the page to grow vertically.
+*/
 .opening-screen {
     position: relative;
-    width: 100%;
-    max-width: 1200px;
+    width: min(1200px, calc(100% - 32px));
     min-height: 100vh;
+    margin: 0 auto;
+    padding: 40px 16px 56px;
+
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 28px 20px 42px;
+
     text-align: center;
 }
 
+/* =========================================
+   TYPOGRAPHY (SYSTEM TEXT STYLE)
+   ========================================= */
 .hint,
 .title,
 .subtitle,
@@ -85,10 +109,14 @@ body {
     margin-top: 22px;
 }
 
+/* =========================================
+   CURSOR ANIMATION
+   =========================================
+   Simulates terminal-style blinking cursor.
+*/
 .cursor {
     display: inline-block;
     margin-left: 2px;
-    color: rgba(255, 255, 255, 0.95);
     animation: blink-cursor 1s steps(1) infinite;
 }
 
@@ -101,10 +129,18 @@ body {
     }
 }
 
+/* =========================================
+   PILL INTERACTION STAGE
+   =========================================
+   Positions interactive buttons above the
+   background SVG illustration.
+*/
 .pill-stage {
     position: relative;
     width: 100%;
-    height: 520px;
+    min-height: 520px;
+    height: clamp(420px, 48vw, 520px);
+
     display: flex;
     align-items: center;
     justify-content: center;
@@ -112,23 +148,30 @@ body {
 
 .pill-row {
     position: absolute;
-    top: 126px;
+    top: clamp(108px, 24vw, 126px);
     display: flex;
-    gap: 68px;
+    gap: clamp(22px, 6vw, 68px);
     z-index: 3;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
+/* =========================================
+   PILL BUTTONS (PRIMARY INTERACTION)
+   =========================================
+   Represents the user's core decision input.
+*/
 .pill-btn {
     position: relative;
-    width: 174px;
-    height: 74px;
+    width: clamp(132px, 18vw, 174px);
+    height: clamp(60px, 8vw, 74px);
     border: 1px solid var(--border-soft);
     border-radius: 999px;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.95);
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(4px);
-    font-size: 1rem;
+    font-size: clamp(0.9rem, 1.4vw, 1rem);
     transition:
         transform 0.25s ease,
         box-shadow 0.25s ease,
@@ -162,6 +205,7 @@ body {
     transform: scale(1.03);
 }
 
+/* visual identity: red (action) */
 .pill-red {
     background: linear-gradient(180deg, rgba(125, 18, 18, 0.9) 0%, rgba(70, 7, 7, 0.95) 100%);
     box-shadow:
@@ -175,6 +219,7 @@ body {
         radial-gradient(circle, rgba(255, 30, 30, 0.20) 0%, rgba(255, 30, 30, 0.10) 30%, rgba(255, 30, 30, 0.00) 68%);
 }
 
+/* visual identity: blue (analysis) */
 .pill-blue {
     background: linear-gradient(180deg, rgba(18, 78, 176, 0.9) 0%, rgba(6, 30, 82, 0.95) 100%);
     box-shadow:
@@ -205,6 +250,11 @@ body {
     }
 }
 
+/* =========================================
+   BACKGROUND HAND GRAPHIC
+   =========================================
+   Anchors visual composition behind buttons.
+*/
 .hand-wrap {
     position: absolute;
     bottom: 18px;
@@ -222,6 +272,11 @@ body {
     display: block;
 }
 
+/* =========================================
+   SCREEN FLASH EFFECT
+   =========================================
+   Simulates a quick transition before overlay.
+*/
 .screen-flash {
     position: fixed;
     inset: 0;
@@ -237,23 +292,94 @@ body {
     pointer-events: auto;
 }
 
+/* =========================================
+   SYSTEM TRANSITION OVERLAY
+   =========================================
+   Displays typed system message before routing.
+*/
+.system-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.96);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.system-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.system-message {
+    font-size: 1.2rem;
+    letter-spacing: 0.2em;
+    color: #ffffff;
+    opacity: 0.85;
+    white-space: nowrap;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* =========================================
+   RESPONSIVE ADJUSTMENTS
+   =========================================
+   Scales interaction area for smaller screens
+   and allows stacked button layout if needed.
+*/
 @media (max-width: 700px) {
+    .opening-screen {
+        padding-top: 28px;
+        padding-bottom: 40px;
+        justify-content: flex-start;
+    }
+
     .pill-stage {
-        height: 460px;
+        min-height: 440px;
+        height: 440px;
+        margin-top: 8px;
     }
 
     .pill-row {
-        top: 138px;
-        gap: 22px;
-    }
-
-    .pill-btn {
-        width: 132px;
-        height: 60px;
-        font-size: 0.9rem;
+        top: 128px;
+        gap: 18px;
     }
 
     .title {
         min-height: 58px;
+    }
+}
+
+@media (max-width: 520px) {
+    .pill-stage {
+        min-height: 500px;
+        height: 500px;
+    }
+
+    .pill-row {
+        top: 92px;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .hand-wrap {
+        bottom: 8px;
+        width: min(560px, 96vw);
+    }
+
+    .system-message {
+        font-size: 1rem;
+        letter-spacing: 0.14em;
+        white-space: normal;
     }
 }

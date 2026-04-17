@@ -14,11 +14,11 @@
             <div class="analytics-topbar-left">
                 <p class="analytics-kicker">decision support</p>
                 <h1>analytics dashboard</h1>
-            </div>
 
-            <div class="analytics-topbar-right">
-                <a href="overview.htm" class="analytics-nav-btn">overview</a>
-                <a href="index.htm" class="analytics-nav-btn">opening</a>
+                <div class="analytics-topbar-actions">
+                    <a href="overview.htm" class="analytics-nav-btn">overview</a>
+                    <a href="index.htm" class="analytics-nav-btn">opening</a>
+                </div>
             </div>
         </header>
 
@@ -50,35 +50,81 @@
             </section>
 
             <section class="analytics-main-grid">
-                <section class="analytics-chart-panel">
-                    <div class="panel-header">
-                        <div>
-                            <p class="panel-kicker">ranked by allocation</p>
-                            <h2>portfolio exposure</h2>
+                <!-- =========================================
+                    PRIMARY ANALYTICS COLUMN
+                    =========================================
+                    Groups the two large visual panels on the
+                    left side of the dashboard:
+                    - allocation breakdown
+                    - capital split (cash vs invested)
+                -->
+                <div class="analytics-primary-column">
+                    <!-- =========================================
+                        ALLOCATION PANEL
+                        =========================================
+                        Main interactive chart for positions,
+                        sector, and style allocation views.
+                    -->
+                    <section class="analytics-chart-panel">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-kicker">ranked by allocation</p>
+                                <h2>portfolio exposure</h2>
+                            </div>
+
+                            <div class="chart-mode-switch">
+                                <button class="chart-mode-btn active" data-mode="positions">positions</button>
+                                <button class="chart-mode-btn" data-mode="sector">sector</button>
+                                <button class="chart-mode-btn" data-mode="style">style</button>
+                            </div>
                         </div>
 
-                        <div class="chart-mode-switch">
-                            <button class="chart-mode-btn active" data-mode="positions">positions</button>
-                            <button class="chart-mode-btn" data-mode="sector">sector</button>
-                            <button class="chart-mode-btn" data-mode="style">style</button>
-                        </div>
-                    </div>
+                        <div class="chart-stage">
+                            <div class="chart-wrap">
+                                <canvas id="allocation-chart"></canvas>
+                            </div>
 
-                    <div class="chart-stage">
-                        <div class="chart-wrap">
-                            <canvas id="allocation-chart"></canvas>
+                            <aside class="chart-detail-card" id="chart-detail-card">
+                                <p class="detail-kicker">hover / click detail</p>
+                                <h3 id="detail-title">allocation details</h3>
+                                <p id="detail-description">
+                                    hover over a slice or a stat card to inspect that metric.
+                                </p>
+                                <p id="detail-value" class="detail-value"></p>
+                            </aside>
+                        </div>
+                    </section>
+
+                    <!-- =========================================
+                        CAPITAL SPLIT PANEL
+                        =========================================
+                        Large supporting chart showing how much
+                        capital remains in cash versus invested.
+                    -->
+                    <section class="analytics-chart-panel">
+                        <div class="panel-header small">
+                            <div>
+                                <p class="panel-kicker">capital deployment</p>
+                                <h2>cash vs invested</h2>
+                            </div>
                         </div>
 
-                        <aside class="chart-detail-card" id="chart-detail-card">
-                            <p class="detail-kicker">hover / click detail</p>
-                            <h3 id="detail-title">allocation details</h3>
-                            <p id="detail-description">
-                                hover over a slice or a stat card to inspect that metric.
-                            </p>
-                            <p id="detail-value" class="detail-value"></p>
-                        </aside>
-                    </div>
-                </section>
+                        <div class="capital-stage">
+                            <div class="capital-chart-wrap">
+                                <canvas id="capital-split-chart"></canvas>
+                            </div>
+
+                            <aside class="chart-detail-card">
+                                <p class="detail-kicker">portfolio deployment</p>
+                                <h3 id="capital-split-title">capital split</h3>
+                                <p id="capital-split-description">
+                                    this chart shows how much of the portfolio remains in cash versus deployed into holdings.
+                                </p>
+                                <p id="capital-split-value" class="detail-value"></p>
+                            </aside>
+                        </div>
+                    </section>
+                </div>
 
                 <aside class="analytics-sidebar">
                     <section class="analytics-side-panel" id="portfolio-exposure-panel">
