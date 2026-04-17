@@ -32,12 +32,56 @@
  * - transaction history
  * - cumulative realised profit/loss
  */
-const portfolio = {
+const PORTFOLIO_STORAGE_KEY = "marketTradingPortfolio";
+
+const DEFAULT_PORTFOLIO_STATE = {
     cash: 10000,
     holdings: {},
     transactions: [],
     realisedPnL: 0
 };
+
+const portfolio = loadPortfolioState();
+
+/**
+ * Loads persisted portfolio state from localStorage.
+ *
+ * Falls back to the default paper-trading portfolio
+ * when no saved state exists or stored data is invalid.
+ */
+function loadPortfolioState() {
+    try {
+        const raw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
+
+        if (!raw) {
+            return { ...DEFAULT_PORTFOLIO_STATE };
+        }
+
+        const parsed = JSON.parse(raw);
+
+        return {
+            cash: typeof parsed.cash === "number" ? parsed.cash : DEFAULT_PORTFOLIO_STATE.cash,
+            holdings: parsed.holdings && typeof parsed.holdings === "object" ? parsed.holdings : {},
+            transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+            realisedPnL: typeof parsed.realisedPnL === "number" ? parsed.realisedPnL : 0
+        };
+    } catch (error) {
+        console.error("Failed to load portfolio from localStorage:", error);
+        return { ...DEFAULT_PORTFOLIO_STATE };
+    }
+}
+
+/**
+ * Saves the current portfolio state so it persists
+ * across page navigation and reloads.
+ */
+function savePortfolioState() {
+    try {
+        localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(portfolio));
+    } catch (error) {
+        console.error("Failed to save portfolio to localStorage:", error);
+    }
+}
 
 
 /**
@@ -144,12 +188,13 @@ function buyStock(symbol, quote, marketSession) {
         time: new Date().toLocaleString()
     });
 
+    savePortfolioState();
+
     return {
         success: true,
         message: `Bought at $${executionPrice.toFixed(2)}`
     };
 }
-
 
 /**
  * =========================================
@@ -207,11 +252,14 @@ function sellStock(symbol, quote, marketSession) {
         delete portfolio.holdings[symbol];
     }
 
+    savePortfolioState();
+
     return {
         success: true,
         message: `Sold at $${executionPrice.toFixed(2)}`
     };
 }
+
 
 
 /**

@@ -83,7 +83,9 @@ body {
 }
 
 .analytics-shell {
-    padding: 16px 32px 32px;
+    max-width: 1700px;
+    margin: 0 auto;
+    padding: 12px 24px 24px;
 }
 
 .analytics-hero-grid {
@@ -168,9 +170,10 @@ body {
 
 .analytics-main-grid {
     display: grid;
-    grid-template-columns: 1.6fr 0.95fr;
-    gap: 16px;
-    margin-bottom: 16px;
+    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+    gap: 14px;
+    margin-bottom: 14px;
+    align-items: start;
 }
 
 .analytics-chart-panel,
@@ -223,23 +226,23 @@ body {
 
 .chart-stage {
     display: grid;
-    grid-template-columns: 1.2fr 0.9fr;
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 14px;
     align-items: stretch;
-    min-height: 420px;
+    min-height: 360px;
 }
 
 .chart-wrap {
     position: relative;
-    min-height: 360px;
+    min-height: 320px;
     border: 1px solid var(--line);
-    padding: 18px;
+    padding: 14px;
     background: #fcfcfb;
 }
 
 .chart-detail-card {
-    padding: 18px;
-    min-height: 240px;
+    padding: 16px;
+    min-height: 220px;
 }
 
 .chart-detail-card h3 {
@@ -350,12 +353,12 @@ body {
 .analytics-bottom-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    gap: 12px;
 }
 
 .analytics-hover-card {
-    padding: 18px;
-    min-height: 220px;
+    padding: 14px;
+    min-height: 170px;
     transition: transform 0.16s ease;
     cursor: pointer;
 }
@@ -376,10 +379,10 @@ body {
 }
 
 .mini-preview {
-    margin-top: 18px;
-    height: 120px;
+    margin-top: 12px;
+    height: 90px;
     border: 1px solid var(--line);
-    padding: 10px;
+    padding: 8px;
     background: #fcfcfb;
 }
 

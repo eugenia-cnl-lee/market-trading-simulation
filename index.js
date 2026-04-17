@@ -196,6 +196,10 @@ Bun.serve({
         const url = new URL(request.url);
         console.log("Incoming request:", url.pathname + url.search);
 
+        if (url.pathname === "/favicon.ico") {
+            return new Response("", { status: 204 });
+        }
+
         if (url.pathname === "/api/stock-universe") {
             const limit = Number(url.searchParams.get("limit")) || 30;
 

@@ -19,11 +19,11 @@
         <div class="pill-stage">
             <div class="pill-row">
                 <button class="pill-btn pill-red" id="red-pill">
-                    <span class="pill-label">choose</span>
+                    <span class="pill-label">trade</span>
                 </button>
 
                 <button class="pill-btn pill-blue" id="blue-pill">
-                    <span class="pill-label">me</span>
+                    <span class="pill-label">analyse</span>
                 </button>
             </div>
 
@@ -76,7 +76,7 @@
     <div class="screen-flash" id="screen-flash"></div>
 
     <audio id="bg-music" autoplay loop preload="auto">
-        <source src="resources/opening-theme.mp3" type="audio/mpeg">
+        <source src="resources/opening.mp3" type="audio/mpeg">
     </audio>
 
     <script>
@@ -128,8 +128,8 @@
             tryAutoplayMusic();
 
             typeText("hint-text", "initialising choice architecture", 34, 200);
-            typeText("title-text", "choose your trade", 70, 900);
-            typeText("subtitle-text", "which one do you pick?", 48, 2300);
+            typeText("title-text", "choose your position", 70, 900);
+            typeText("subtitle-text", "capital follows decision", 48, 2300);
         });
 
         redPill.addEventListener("click", () => choosePill("red"));

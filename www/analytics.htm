@@ -8,7 +8,6 @@
         <link rel="stylesheet" href="styles/main.css" />
         <link rel="stylesheet" href="styles/analytics.css" />
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body class="analytics-page">
         <header class="analytics-topbar">
@@ -54,8 +53,8 @@
                 <section class="analytics-chart-panel">
                     <div class="panel-header">
                         <div>
-                            <p class="panel-kicker">interactive allocation explorer</p>
-                            <h2>portfolio structure</h2>
+                            <p class="panel-kicker">ranked by allocation</p>
+                            <h2>portfolio exposure</h2>
                         </div>
 
                         <div class="chart-mode-switch">
@@ -82,18 +81,18 @@
                 </section>
 
                 <aside class="analytics-sidebar">
-                    <section class="analytics-side-panel">
+                    <section class="analytics-side-panel" id="portfolio-exposure-panel">
                         <div class="panel-header small">
                             <div>
-                                <p class="panel-kicker">ranked exposure</p>
-                                <h2>position leaderboard</h2>
+                                <p class="panel-kicker">ranked by allocation</p>
+                                <h2>portfolio exposure</h2>
                             </div>
                         </div>
 
                         <div id="leaderboard-list" class="leaderboard-list"></div>
                     </section>
 
-                    <section class="analytics-side-panel">
+                    <section class="analytics-side-panel" id="live-signals-panel">
                         <div class="panel-header small">
                             <div>
                                 <p class="panel-kicker">system feedback</p>
@@ -107,7 +106,7 @@
             </section>
 
             <section class="analytics-bottom-grid">
-                <article class="analytics-hover-card" data-preview="performance">
+                <article class="analytics-hover-card" id="performance-card" data-preview="performance">
                     <p class="mini-label">performance state</p>
                     <h3 id="perf-state">breakeven</h3>
                     <p id="perf-pnl">unrealised: $0.00</p>
@@ -116,7 +115,7 @@
                     </div>
                 </article>
 
-                <article class="analytics-hover-card" data-preview="reliability">
+                <article class="analytics-hover-card" id="reliability-card" data-preview="reliability">
                     <p class="mini-label">data reliability</p>
                     <h3 id="reliability-state">stable</h3>
                     <p id="reliability-detail">stale: 0, invalid: 0</p>
@@ -125,7 +124,7 @@
                     </div>
                 </article>
 
-                <article class="analytics-hover-card" data-preview="trading-pattern">
+                <article class="analytics-hover-card" id="pattern-card" data-preview="trading-pattern">
                     <p class="mini-label">trading pattern</p>
                     <h3 id="pattern-bias">balanced</h3>
                     <p id="pattern-detail">buy: 0, sell: 0</p>
@@ -136,6 +135,7 @@
             </section>
         </main>
 
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="scripts/marketData.js"></script>
         <script src="scripts/portfolio.js"></script>
         <script src="scripts/analytics.js"></script>

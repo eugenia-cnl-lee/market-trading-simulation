@@ -29,7 +29,7 @@ body {
     margin: 0;
     padding: 32px;
     font-family: 'Times New Roman', Times, serif;
-    background-color: #f4f6f8;
+    background-color: #f8f5f40e;
     color: #1f2933;
 }
 
@@ -61,6 +61,51 @@ h3 {
 p {
     margin: 6px 0;
     line-height: 1.5;
+}
+
+
+/**
+ * =========================================
+ * TOPBAR
+ * =========================================
+ *
+ */
+
+.overview-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 28px 12px;
+}
+
+.overview-title {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3.1rem);
+    font-weight: 600;
+    color: black;
+    letter-spacing: -0.03em;
+}
+
+.overview-topbar-right {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.overview-nav-btn {
+    text-decoration: none;
+    padding: 10px 14px;
+    border-radius: 99px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(255, 255, 255, 0.08);
+    color: grey;
+    transition: transform 0.2s ease, 0.2s ease;
+}
+
+.overview-nav-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.16);
 }
 
 

@@ -181,16 +181,19 @@ function generateInsights(quotes) {
      * Also identifies the dominant sector and style.
      */
     for (const position of analysisData.allocation.positions) {
-        const sector = position.sector || "Other";
+        const sector = position.sector || "Other"; 
         const style = position.style || "Unknown";
 
+        // Aggregate into sectorWeights
         analysisData.allocation.sectorWeights[sector] =
             (analysisData.allocation.sectorWeights[sector] || 0) + position.weight;
 
+        // Aggregate into styleWeights
         analysisData.allocation.styleWeights[style] =
             (analysisData.allocation.styleWeights[style] || 0) + position.weight;
     }
 
+    // Find dominant sector
     for (const sector in analysisData.allocation.sectorWeights) {
         const weight = analysisData.allocation.sectorWeights[sector];
 
@@ -200,6 +203,7 @@ function generateInsights(quotes) {
         }
     }
 
+    // Find dominant style
     for (const style in analysisData.allocation.styleWeights) {
         const weight = analysisData.allocation.styleWeights[style];
 
@@ -209,6 +213,7 @@ function generateInsights(quotes) {
         }
     }
 
+    // Insights
     if (analysisData.allocation.dominantSectorWeight >= 60) {
         insights.push({
             type: "warning",
@@ -413,6 +418,24 @@ function generateInsights(quotes) {
 
     return {
         insights,
-        analysisData
+        allocationData: {
+            positions: analysisData.allocation.positions,
+
+            sorted: analysisData.allocation.sortedPositions,
+
+            sector: analysisData.allocation.sectorWeights,
+            style: analysisData.allocation.styleWeights,
+
+            concentration: {
+                top1: analysisData.allocation.concentration.top1Weight,
+                top3: analysisData.allocation.concentration.top3Weight
+            },
+
+            dominantSector: analysisData.allocation.dominantSector,
+            dominantSectorWeight: analysisData.allocation.dominantSectorWeight,
+
+            dominantStyle: analysisData.allocation.dominantStyle,
+            dominantStyleWeight: analysisData.allocation.dominantStyleWeight
+        }
     };
 }
